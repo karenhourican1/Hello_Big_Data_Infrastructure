@@ -1,0 +1,16 @@
+= Big Data Infrastructure Exercises
+
+We'll use this repository through our course.
+Starting it from a small application to have something
+bigger and more complex.
+
+== Libraries
+
+https://fastapi.tiangolo.com/[FastAPI] is one of the best libraries for building an API with Python.
+It has a great documentation and enables us to build
+type safe and documented APIs easily.
+
+
+
+
+== Data
