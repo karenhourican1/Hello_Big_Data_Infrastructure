@@ -1,0 +1,16 @@
+= S1 Exercises
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+1. Download and configure https://github.com/martsec/big-data-infrastructure-exercises[the app] to run on your machine
+2. Familiarize yourself with https://fastapi.tiangolo.com/[`FastAPI`] and the example endpoints and tests
+3. Download the https://samples.adsbexchange.com/readsb-hist/2023/11/01/[flights data] and understand it using its https://www.adsbexchange.com/version-2-api-wip/[documentation]
+4. Build the exercises found in the files from this folder
+
+
+TIP: Explore how to write clean and concise code in python. Best practices and testing your code is something it will help you understand what you did 6 months ago way easier.

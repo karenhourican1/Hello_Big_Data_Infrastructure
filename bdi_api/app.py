@@ -3,7 +3,10 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+from starlette import status
+from starlette.responses import JSONResponse
 
+import bdi_api
 from bdi_api.examples import v0_router
 
 logger = logging.getLogger(__name__)
@@ -19,6 +22,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
 
 app = FastAPI()
 app.include_router(v0_router)
+
+
+@app.get("/health", status_code=200)
+async def get_health() -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content="ok",
+    )
+
+
+@app.get("/version", status_code=200)
+async def get_version() -> dict:
+    return {"version": bdi_api.__version__}
 
 
 if __name__ == "__main__":

@@ -32,7 +32,10 @@ class TestExamples:
 
     @pytest.mark.parametrize(
         "item_id,params,should_be",
-        [(1, "?q=param", {"item_id": 1, "q": "param"}), (5, "", {"item_id": 5, "q": None})],
+        [
+            (1, "?q=param", {"item_id": 1, "q": "param"}),
+            (5, "", {"item_id": 5, "q": None}),
+        ],
     )
     def test_id_endpoint(self, client: TestClient, item_id, params, should_be) -> None:
         # Given

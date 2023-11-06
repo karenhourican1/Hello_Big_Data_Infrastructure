@@ -3,7 +3,10 @@ name = "bdi-api"
 version = "0.0.1"
 description = "Exercises for the BTS Big Data Infrastructure course"
 readme = "README.adoc"
-authors = ["Marti Segarra <marti.segarra@bts.tech>"]
+authors = [
+    "Marti Segarra <marti.segarra@bts.tech>",
+    "Your name <your.email@bts.tech" # TODO
+]
 packages = [{include = "bdi_api"}]
 
 
@@ -15,6 +18,7 @@ uvicorn = "^0.23.2"
 pydantic = "^2.4"
 pydantic-settings = "^2.0"
 boto3 = "^1.26.127"
+# Add your dependencies here
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.5.0"
