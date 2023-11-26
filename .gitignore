@@ -11,6 +11,7 @@ site
 coverage.xml
 .hypothesis
 .netlify
+.mypy
 test.db
 log.txt
 Pipfile.lock
@@ -33,3 +34,6 @@ archive.zip
 
 /data/**
 !/data/**/.gitkeep
+
+.report.json
+.pytest.json

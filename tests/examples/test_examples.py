@@ -25,7 +25,8 @@ class TestExamples:
     def test_hello_world(self, client) -> None:
         # Given
         # When
-        response = client.get("/api/v0")
+        with client as client:  # Always do this
+            response = client.get("/api/v0")
         # Then
         assert response.status_code == 200
         assert response.json() == {"Hello": "World"}
@@ -40,7 +41,8 @@ class TestExamples:
     def test_id_endpoint(self, client: TestClient, item_id, params, should_be) -> None:
         # Given
         # When
-        response = client.get(f"/api/v0/items/{item_id}{params}")
+        with client as client:  # Always do this
+            response = client.get(f"/api/v0/items/{item_id}{params}")
         # Then
         assert response.status_code == 200
         assert response.json() == should_be
@@ -48,6 +50,7 @@ class TestExamples:
     def test_not_exists(self, client) -> None:
         # Given
         # When
-        response = client.get("/api/v0/not_existant")
+        with client as client:  # Always do this
+            response = client.get("/api/v0/not_existant")
         # Then
         assert response.status_code == status.HTTP_404_NOT_FOUND

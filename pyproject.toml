@@ -18,6 +18,7 @@ uvicorn = "^0.23.2"
 pydantic = "^2.4"
 pydantic-settings = "^2.0"
 boto3 = "^1.26.127"
+duckdb = "^0.9.2"
 # Add your dependencies here
 
 [tool.poetry.group.dev.dependencies]
@@ -69,20 +70,17 @@ unfixable = []
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.format]
-# Like Black, use double quotes for strings.
 quote-style = "double"
-
-# Like Black, indent with spaces, rather than tabs.
 indent-style = "space"
-
-# Like Black, respect magic trailing commas.
 skip-magic-trailing-comma = false
-
-# Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
 
 
 [tool.mypy]
+
+[[tool.mypy.overrides]]
 module = ["fastapi.*", "uvicorn.*", "boto3.*", "botocore.*", "pandas.*",
-    "psycopg2.*", "pydantic.*"]
+    "psycopg2.*", "pydantic.*", "ruff.*", "pydantic_settings.*", "starlette.*",
+    "duckdb.*", "requests.*", "pytest.*", "importlib_metadata.*"
+]
 ignore_missing_imports = true

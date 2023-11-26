@@ -4,6 +4,18 @@ We'll use this repository through our course.
 Starting it from a small application to have something
 bigger and more complex.
 
+== Installation
+
+* Use python 3.11
+* https://github.com/pypa/pipx#install-pipx[Install `pipx` 🔗]
+* Install poetry (dependency manager) `pipx install poetry`
+
+Run `poetry install`
+
+If you need to add any package, just add it inside `pyproject.toml`
+to the `[tool.poetry.dependencies]` section.
+Then run `poetry update`
+
 
 == How will the exercises be evaluated?
 
@@ -22,10 +34,9 @@ For the parts requiring code, I'll consider the following:
  * Ranked according to the best of youXXXXXXXXXXXXX
 5. Tests you might have implemented (2 points)
  * Coverage % and completeness
+ * Failing tests result in a 0 for this section
 
-Considerations:
-
-* Late delivery not justified: -2 points per day
+WARNING: Late delivery not justified: -2 points per day
 
 
 == Libraries

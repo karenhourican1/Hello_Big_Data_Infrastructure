@@ -33,7 +33,6 @@ run_local: build
 	docker compose -f ${DOCKER_COMPOSE_FILE} stop
 	docker compose -f ${DOCKER_COMPOSE_FILE} up -d
 	@echo "You can check now http://localhost:8080/docs"
-	@echo "         and traces at http://localhost:9411/"
 
 test_api: run_local
 	st run --checks all http://localhost:8080/openapi.json -H "Authorization: Bearer TOKEN"

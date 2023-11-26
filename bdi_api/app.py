@@ -8,6 +8,7 @@ from starlette.responses import JSONResponse
 
 import bdi_api
 from bdi_api.examples import v0_router
+from bdi_api.s1.solution import s1
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
 
 app = FastAPI()
 app.include_router(v0_router)
+app.include_router(s1)
 
 
 @app.get("/health", status_code=200)

@@ -9,8 +9,16 @@ endif::[]
 
 1. Download and configure https://github.com/martsec/big-data-infrastructure-exercises[the app] to run on your machine
 2. Familiarize yourself with https://fastapi.tiangolo.com/[`FastAPI`] and the example endpoints and tests
-3. Download the https://samples.adsbexchange.com/readsb-hist/2023/11/01/[flights data] and understand it using its https://www.adsbexchange.com/version-2-api-wip/[documentation]
+3. Download a couple of files of our https://samples.adsbexchange.com/readsb-hist/2023/11/01/[flights data] and understand it using its https://www.adsbexchange.com/version-2-api-wip/[documentation]
 4. Build the exercises found in the files from this folder
 
 
 TIP: Explore how to write clean and concise code in python. Best practices and testing your code is something it will help you understand what you did 6 months ago way easier.
+
+
+== How to deliver the solution
+
+1. Commit and push your code to github.
+2. Go to your GitHub's commit history, take a screenshot and upload it to campus
+
+I'll use the latest commit shown in the snapshot to evaluate your code.
