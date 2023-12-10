@@ -8,7 +8,8 @@ from starlette.responses import JSONResponse
 
 import bdi_api
 from bdi_api.examples import v0_router
-from bdi_api.s1.solution import s1
+#from bdi_api.s1.solution import s1
+from bdi_api.s1.exercise import s1
 
 logger = logging.getLogger(__name__)
 
