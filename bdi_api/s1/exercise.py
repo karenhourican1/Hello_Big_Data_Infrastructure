@@ -81,6 +81,7 @@ def prepare_data() -> str:
     # TODO
     data_dir = Path(settings.raw_dir) / "day=20231101"
     prepared_dir = data_dir / "prepared"
+    local_data = Path(settings.local_dir)
 
     # Clean the prepared directory
     if prepared_dir.exists():
@@ -91,10 +92,17 @@ def prepare_data() -> str:
     dataframe_total = pd.DataFrame()
 
     # Read and process each JSON file
-    for json_file in data_dir.glob('*.json'):
+    for json_file in local_data.glob('*.json'):
         df = pd.read_json(json_file)
+        df = df['aircraft']
+        df = pd.DataFrame([[k, *v] for k, v in df.items()],
+                          columns=['hex', 'type', 'flight' 'r', 't', 'alt_baro', 'gs', 'lat', 'lon', 'alt_baro', 'gs', 'emergency'])
+        #print(df.info())
+     #   "hex": "a65800", "type": "adsc", "flight": "DL295   ", "r": "N508DN", "t": "A359", "alt_baro": 39996, "gs": 454.0, "track": 244.71, "baro_rate": -16, "lat": 46.577740, "lon": -178.413162, "nic": 0, "rc": 0, "seen_pos": 190.091, "alert": 0, "spi": 0, "mlat": [], "tisb": [], "messages": 31181264, "seen": 190.1, "rssi": -49.5
+
         # Select only the required columns
-        df = df[['hex', 'r', 't', 'lat', 'lon', 'alt_baro', 'gs', 'emergency']]
+      #  df = df[['hex', 'r', 't', 'lat', 'lon', 'alt_baro', 'gs', 'emergency']]
+
         # Rename columns to desired names
         df.rename(columns={
             'hex': 'icao',
@@ -105,6 +113,8 @@ def prepare_data() -> str:
             'alt_baro': 'altitude_baro',
             'gs': 'ground_speed',
         }, inplace=True)
+        print(df)
+        return "OK"
 
         # Create "had_emergency" column
         df["had_emergency"] = df["emergency"].apply(lambda e: e not in ["none", None])
@@ -114,10 +124,11 @@ def prepare_data() -> str:
 
         # Append the processed DataFrame to the total DataFrame
         dataframe_total = pd.concat([dataframe_total, df], ignore_index=True)
-
+        print(dataframe_total)
+        print("hello world")
         # Partition by aircraft type
-        for aircraft_type, group in df.groupby('type'):
-            type_dir = prepared_dir / aircraft_type
+        for aircraft_type, group in dataframe_total.groupby('type'):
+            type_dir = prepared_dir / str(aircraft_type)
             type_dir.mkdir(parents=True, exist_ok=True)
             group.to_csv(type_dir / f"{json_file.stem}_prepared.csv", index=False)
 
@@ -131,6 +142,17 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
     """
     # TODO
     prepared_dir = Path(settings.raw_dir) / "day=20231101/prepared"
+
+    # Check if the directory exists
+    if prepared_dir.exists() and prepared_dir.is_dir():
+        # List CSV files in the directory
+        csv_files = list(prepared_dir.glob("*.csv"))
+
+        # Print the list of CSV files
+        for csv_file in csv_files:
+            print(csv_file.name)
+    else:
+        print("The 'prepared' directory does not exist.")
 
     # Check if the prepared directory exists
     if not prepared_dir.exists():
