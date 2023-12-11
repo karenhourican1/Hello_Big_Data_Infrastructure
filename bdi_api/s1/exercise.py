@@ -41,19 +41,23 @@ def download_data() -> str:
     download_dir.mkdir(parents=True, exist_ok=True)  # Ensures that the directory exists
     # BASE_URL
     for i in range(1000):
-        file_url = f"{BASE_URL}{i:04}.json"  # This formats the number with leading zeros
-        file_path = download_dir / f"{i:04}.json"
+        # Adjusting the number to match the timestamp format in the file names
+        # The timestamp increases by 5 seconds for each file
+        timestamp = i * 5
+        file_url = f"{BASE_URL}2023-11-01-{timestamp:06}Z.json"  # Include the date in the file name
+        file_path = download_dir / f"2023-11-01-{timestamp:06}Z.json"
 
         if not file_path.exists():  # Check if the file has already been downloaded
             try:
                 response = requests.get(file_url)
-                response.raise_for_status()  # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
+                response.raise_for_status()  # Will raise HTTPError if HTTP request returned an unsuccessful status code
                 with open(file_path, 'wb') as f:
                     f.write(response.content)
             except requests.exceptions.HTTPError as http_err:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(http_err))
             except Exception as err:
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err))
+
     return "OK"
 
 
