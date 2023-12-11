@@ -21,6 +21,7 @@ boto3 = "^1.26.127"
 duckdb = "^0.9.2"
 # Add your dependencies here
 importlib-metadata = "^7.0.0"
+requests = "^2.31.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.5.0"
