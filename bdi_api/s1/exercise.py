@@ -1,11 +1,12 @@
 from fastapi import APIRouter, status, HTTPException
 
-from bdi_api.settigns import Settings
+from bdi_api.settings import Settings
 
 import requests
 import os
 from pathlib import Path
 import pandas as pd
+import shutil
 
 settings = Settings()
 
@@ -78,6 +79,38 @@ def prepare_data() -> str:
     data
     """
     # TODO
+    data_dir = Path(settings.raw_dir) / "day=20231101"
+    prepared_dir = data_dir / "prepared"
+
+    # Clean the prepared directory
+    if prepared_dir.exists():
+        shutil.rmtree(prepared_dir)
+    prepared_dir.mkdir()
+
+    # Read and process each JSON file
+    for json_file in data_dir.glob('*.json'):
+        df = pd.read_json(json_file)
+        # Select only the required columns
+        df = df[['hex', 'r', 't', 'seen_pos', 'lat', 'lon', 'alt_baro', 'gs', 'emergency']]
+        # Rename columns to desired names
+        df.rename(columns={
+            'hex': 'icao',
+            'r': 'registration',
+            't': 'type',
+            'seen_pos': 'timestamp',
+            'lat': 'lat',
+            'lon': 'lon',
+            'alt_baro': 'altitude_baro',
+            'gs': 'ground_speed',
+            'emergency': 'emergency'
+        }, inplace=True)
+
+        # Partition by aircraft type
+        for aircraft_type, group in df.groupby('type'):
+            type_dir = prepared_dir / aircraft_type
+            type_dir.mkdir(parents=True, exist_ok=True)
+            group.to_csv(type_dir / f"{json_file.stem}_prepared.csv", index=False)
+
     return "OK"
 
 
