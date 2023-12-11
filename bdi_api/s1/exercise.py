@@ -120,7 +120,34 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
     icao asc
     """
     # TODO
-    return [{"icao": "0d8300", "registration": "YV3382", "type": "LJ31"}]
+    prepared_dir = Path(settings.raw_dir) / "day=20231101/prepared"
+
+    # Check if the prepared directory exists
+    if not prepared_dir.exists():
+        raise HTTPException(status_code=404, detail="Prepared data not found")
+
+    # Initialize an empty DataFrame to hold all aircraft data
+    all_aircraft = pd.DataFrame()
+
+    # Read prepared data from each type directory
+    for type_dir in prepared_dir.iterdir():
+        if type_dir.is_dir():  # Ensure it's a directory
+            for file in type_dir.glob("*.csv"):
+                df = pd.read_csv(file, usecols=["icao", "registration", "type"])
+                all_aircraft = all_aircraft.append(df, ignore_index=True)
+
+    # Sort by 'icao' in ascending order
+    all_aircraft.sort_values(by="icao", inplace=True)
+
+    # Implement pagination
+    start = page * num_results
+    end = start + num_results
+    paginated_aircraft = all_aircraft.iloc[start:end]
+
+    # Convert DataFrame to a list of dictionaries for output
+    aircraft_list = paginated_aircraft.to_dict(orient="records")
+
+    return aircraft_list
 
 
 @s1.get("/aircraft/{icao}/positions")
