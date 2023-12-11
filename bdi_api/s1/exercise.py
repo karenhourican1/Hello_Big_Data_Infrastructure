@@ -5,10 +5,11 @@ from bdi_api.settigns import Settings
 import requests
 import os
 from pathlib import Path
+import pandas as pd
 
 settings = Settings()
 
-BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
+#BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
 
 s1 = APIRouter(
     responses={
@@ -37,26 +38,23 @@ def download_data() -> str:
     """
     # TODO
     # download_dir = os.path.join(settings.raw_dir, "day=20231101")
-    download_dir = Path(settings.raw_dir) / "day=20231101"
-    download_dir.mkdir(parents=True, exist_ok=True)  # Ensures that the directory exists
     # BASE_URL
-    for i in range(1000):
-        # Adjusting the number to match the timestamp format in the file names
-        # The timestamp increases by 5 seconds for each file
-        timestamp = i * 5
-        file_url = f"{BASE_URL}2023-11-01-{timestamp:06}Z.json"  # Include the date in the file name
-        file_path = download_dir / f"2023-11-01-{timestamp:06}Z.json"
+    """
+        Process the JSON files that are already downloaded and stored in the folder data/raw
+        """
+    data_dir = Path(settings.raw_dir) / "day=20231101"
+    if not data_dir.exists():
+        return "Data directory does not exist."
 
-        if not file_path.exists():  # Check if the file has already been downloaded
-            try:
-                response = requests.get(file_url)
-                response.raise_for_status()  # Will raise HTTPError if HTTP request returned an unsuccessful status code
-                with open(file_path, 'wb') as f:
-                    f.write(response.content)
-            except requests.exceptions.HTTPError as http_err:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(http_err))
-            except Exception as err:
-                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err))
+    # Initialize an empty DataFrame to hold all the data
+    all_data = pd.DataFrame()
+
+    # Process each JSON file
+    for json_file in data_dir.glob('*.json'):
+        # Read the file into a DataFrame
+        df = pd.read_json(json_file)
+        # Append to the all_data DataFrame
+        all_data = all_data.append(df, ignore_index=True)
 
     return "OK"
 
