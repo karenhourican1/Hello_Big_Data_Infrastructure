@@ -136,6 +136,12 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
                 df = pd.read_csv(file, usecols=["icao", "registration", "type"])
                 all_aircraft = all_aircraft.append(df, ignore_index=True)
 
+    # Print column names for debugging
+    print(all_aircraft.columns)
+
+    # Check if 'icao' column exists
+    if 'icao' not in all_aircraft.columns:
+        raise HTTPException(status_code=500, detail="'icao' column not found in data")
     # Sort by 'icao' in ascending order
     all_aircraft.sort_values(by="icao", inplace=True)
 
