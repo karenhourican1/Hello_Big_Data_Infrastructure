@@ -1,8 +1,13 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
 
 from bdi_api.settigns import Settings
 
+import requests
+import os
+from pathlib import Path
+
 settings = Settings()
+
 BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
 
 s1 = APIRouter(
@@ -32,8 +37,23 @@ def download_data() -> str:
     """
     # TODO
     # download_dir = os.path.join(settings.raw_dir, "day=20231101")
+    download_dir = Path(settings.raw_dir) / "day=20231101"
+    download_dir.mkdir(parents=True, exist_ok=True)  # Ensures that the directory exists
     # BASE_URL
+    for i in range(1000):
+        file_url = f"{BASE_URL}{i:04}.json"  # This formats the number with leading zeros
+        file_path = download_dir / f"{i:04}.json"
 
+        if not file_path.exists():  # Check if the file has already been downloaded
+            try:
+                response = requests.get(file_url)
+                response.raise_for_status()  # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
+                with open(file_path, 'wb') as f:
+                    f.write(response.content)
+            except requests.exceptions.HTTPError as http_err:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(http_err))
+            except Exception as err:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err))
     return "OK"
 
 
