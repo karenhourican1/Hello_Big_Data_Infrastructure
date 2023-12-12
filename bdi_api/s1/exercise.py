@@ -306,4 +306,26 @@ def get_aircraft_statistics(icao: str) -> dict:
     * had_emergency
     """
     # TODO
-    return {"max_altitude_baro": 300000, "max_ground_speed": 493, "had_emergency": False}
+    prepared_dir = Path(settings.prepared_dir) / "day=20231101"
+    if not prepared_dir.exists():
+        raise HTTPException(status_code=404, detail="Prepared data not found")
+
+    max_altitude_baro = 0
+    max_ground_speed = 0
+    had_emergency = False
+
+    for json_file in prepared_dir.glob("*.processed.json"):
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+            for record in data:
+                if record["icao"] == icao:
+                    max_altitude_baro = max(max_altitude_baro, record.get("altitude_baro", 0))
+                    max_ground_speed = max(max_ground_speed, record.get("ground_speed", 0))
+                    if record.get("emergency", ""):  # Assuming non-empty string indicates emergency
+                        had_emergency = True
+
+    return {
+        "max_altitude_baro": max_altitude_baro,
+        "max_ground_speed": max_ground_speed,
+        "had_emergency": had_emergency
+    }
