@@ -222,51 +222,33 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
     icao asc
     """
     # TODO
-    prepared_dir = Path(settings.raw_dir) / "day=20231101/prepared"
+    prepared_dir = Path(settings.prepared_dir) / "day=20231101"
 
-    # Check if the directory exists
-    if prepared_dir.exists() and prepared_dir.is_dir():
-        # List CSV files in the directory
-        csv_files = list(prepared_dir.glob("*.csv"))
-
-        # Print the list of CSV files
-        for csv_file in csv_files:
-            print(csv_file.name)
-    else:
-        print("The 'prepared' directory does not exist.")
-
-    # Check if the prepared directory exists
     if not prepared_dir.exists():
         raise HTTPException(status_code=404, detail="Prepared data not found")
 
-    # Initialize an empty DataFrame to hold all aircraft data
-    all_aircraft = pd.DataFrame()
+    aircraft_list = []
 
-    # Read prepared data from each type directory
-    for type_dir in prepared_dir.iterdir():
-        if type_dir.is_dir():  # Ensure it's a directory
-            for file in type_dir.glob("*.csv"):
-                df = pd.read_csv(file, usecols=["icao", "registration", "type"])
-                all_aircraft = all_aircraft.append(df, ignore_index=True)
+    # Read the prepared JSON files and collect aircraft data
+    for json_file in prepared_dir.glob("*.json"):
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+            for aircraft in data:
+                aircraft_list.append({
+                    "icao": aircraft["icao"],
+                    "registration": aircraft["registration"],
+                    "type": aircraft["type"]
+                })
 
-    # Print column names for debugging
-    print(all_aircraft.columns)
-
-    # Check if 'icao' column exists
-    if 'icao' not in all_aircraft.columns:
-        raise HTTPException(status_code=500, detail="'icao' column not found in data")
-    # Sort by 'icao' in ascending order
-    all_aircraft.sort_values(by="icao", inplace=True)
+    # Sort the list of aircraft by the 'icao' code in ascending order
+    aircraft_list.sort(key=lambda x: x['icao'])
 
     # Implement pagination
     start = page * num_results
     end = start + num_results
-    paginated_aircraft = all_aircraft.iloc[start:end]
+    paginated_aircraft = aircraft_list[start:end]
 
-    # Convert DataFrame to a list of dictionaries for output
-    aircraft_list = paginated_aircraft.to_dict(orient="records")
-
-    return aircraft_list
+    return paginated_aircraft
 
 
 @s1.get("/aircraft/{icao}/positions")
