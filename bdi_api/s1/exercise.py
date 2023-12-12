@@ -242,16 +242,22 @@ def get_aircraft_statistics(icao: str) -> dict:
                 if record["icao"] == icao:
                     # Check and convert altitude_baro if it's numeric
                     altitude_baro = record.get("altitude_baro", "0")
-                    if altitude_baro.isdigit():
-                        max_altitude_baro = max(max_altitude_baro, int(altitude_baro))
+                    # Check if altitude_baro is a digit and convert it to an integer
+                    if isinstance(altitude_baro, str) and altitude_baro.isdigit():
+                        altitude_baro = int(altitude_baro)
+                    else:
+                        altitude_baro = 0
 
-                    # Check and convert ground_speed if it's numeric
+                    max_altitude_baro = max(max_altitude_baro, altitude_baro)
+
+                    # Convert ground_speed to float and handle non-numeric values
                     ground_speed = record.get("ground_speed", "0")
                     try:
                         ground_speed = float(ground_speed)
-                        max_ground_speed = max(max_ground_speed, ground_speed)
                     except ValueError:
-                        pass
+                        ground_speed = 0.0
+
+                    max_ground_speed = max(max_ground_speed, ground_speed)
 
                     # Check for emergency
                     if record.get("emergency", "") not in ["", "none"]:
