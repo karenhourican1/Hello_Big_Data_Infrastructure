@@ -117,12 +117,19 @@ def prepare_data() -> str:
     # TODO
     download_dir = Path(settings.raw_dir) / "day=20231101" / "prepared"  # Updated path to the prepared directory
     output_dir = Path(settings.prepared_dir) / "day=20231101"  # Directory to store the processed files
-    print(output_dir)
+    print(f"Download Directory: {download_dir}")
+    print(f"Output Directory: {output_dir}")
     # Ensure the output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Output directory exists: {output_dir.exists()}")
 
     # Process each file
-    for filename in glob.glob(f'{download_dir}/*.json'):
+    # Process each file
+    filenames = glob.glob(f'{download_dir}/*.json')
+    print(f"Found {len(filenames)} files to process")
+
+    for filename in filenames:
+        print(f"Processing file: {filename}")
         try:
             with open(filename, 'r') as file:  # Open the JSON file
                 data = json.load(file)
