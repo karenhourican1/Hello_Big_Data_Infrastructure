@@ -1,4 +1,7 @@
+import glob
+
 from fastapi import APIRouter, status, HTTPException
+from pandas import read_json
 
 from bdi_api.settings import Settings
 
@@ -6,6 +9,7 @@ import requests
 import os
 from pathlib import Path
 import pandas as pd
+import json
 import shutil
 
 settings = Settings()
@@ -79,58 +83,90 @@ def prepare_data() -> str:
     data
     """
     # TODO
-    data_dir = Path(settings.raw_dir) / "day=20231101"
-    prepared_dir = data_dir / "prepared"
-    local_data = Path(settings.local_dir)
+    download_dir = os.path.join(settings.raw_dir, "day=20231101")
+    prepared_dir = os.path.join(settings.prepared_dir, "day=20231101")
+    filenames = glob.glob(f'{download_dir}/*.json.gz')
+    for filename in filenames:
+        with open(filename, 'r') as file:
+            data = json.load(file)  # Use json.load to read JSON data
+
+        aircraft_data = data.get("aircraft", [])
+        timestamp = data.get("now", "")
+
+        # Extract the necessary fields into a list of dictionaries
+        extracted_data = []
+        for aircraft in aircraft_data:
+            extracted_data.append({
+                "icao": aircraft.get("hex", ""),
+                "registration": aircraft.get("r", ""),
+                "type": aircraft.get("t", ""),
+                "flight_name": aircraft.get("flight", ""),
+                "altitude_baro": aircraft.get("alt_baro", ""),
+                "ground_speed": aircraft.get("gs", ""),
+                "latitude": aircraft.get("lat", ""),
+                "longitude": aircraft.get("lon", ""),
+                "flight_status": aircraft.get("alert", ""),
+                "emergency": aircraft.get("emergency", ""),
+                "timestamp": timestamp
+            })
+
+
+        # Write the prepared data to a JSON file (modify the filename as needed)
+        with open(os.path.join(prepared_dir, f'{filename}.prepared.json'), 'w') as prepared_file:
+            json.dump(extracted_data, prepared_file, indent=4)  # Use json.dump to write JSON data
+    # data_dir = Path(settings.raw_dir) / "day=20231101"
+    # prepared_dir = data_dir / "prepared"
+    # local_data = Path(settings.local_dir)
+        print(extracted_data)
 
     # Clean the prepared directory
-    if prepared_dir.exists():
-        shutil.rmtree(prepared_dir)
-    prepared_dir.mkdir()
-
-    # Initialize an empty DataFrame to store all data
-    dataframe_total = pd.DataFrame()
-
-    # Read and process each JSON file
-    for json_file in local_data.glob('*.json'):
-        df = pd.read_json(json_file)
-        df = df['aircraft']
-        df = pd.DataFrame([[k, *v] for k, v in df.items()],
-                          columns=['hex', 'type', 'flight' 'r', 't', 'alt_baro', 'gs', 'lat', 'lon', 'alt_baro', 'gs', 'emergency'])
-        #print(df.info())
-     #   "hex": "a65800", "type": "adsc", "flight": "DL295   ", "r": "N508DN", "t": "A359", "alt_baro": 39996, "gs": 454.0, "track": 244.71, "baro_rate": -16, "lat": 46.577740, "lon": -178.413162, "nic": 0, "rc": 0, "seen_pos": 190.091, "alert": 0, "spi": 0, "mlat": [], "tisb": [], "messages": 31181264, "seen": 190.1, "rssi": -49.5
-
-        # Select only the required columns
-      #  df = df[['hex', 'r', 't', 'lat', 'lon', 'alt_baro', 'gs', 'emergency']]
-
-        # Rename columns to desired names
-        df.rename(columns={
-            'hex': 'icao',
-            'r': 'registration',
-            't': 'type',
-            'lat': 'lat',
-            'lon': 'lon',
-            'alt_baro': 'altitude_baro',
-            'gs': 'ground_speed',
-        }, inplace=True)
-        print(df)
-        return "OK"
-
-        # Create "had_emergency" column
-        df["had_emergency"] = df["emergency"].apply(lambda e: e not in ["none", None])
-
-        # Convert "now" column to datetime and assign it to "timestamp" column
-        df["timestamp"] = pd.to_datetime(df["timestamp"], unit='s')
-
-        # Append the processed DataFrame to the total DataFrame
-        dataframe_total = pd.concat([dataframe_total, df], ignore_index=True)
-        print(dataframe_total)
-        print("hello world")
-        # Partition by aircraft type
-        for aircraft_type, group in dataframe_total.groupby('type'):
-            type_dir = prepared_dir / str(aircraft_type)
-            type_dir.mkdir(parents=True, exist_ok=True)
-            group.to_csv(type_dir / f"{json_file.stem}_prepared.csv", index=False)
+    # if prepared_dir.exists():
+    #     shutil.rmtree(prepared_dir)
+    # prepared_dir.mkdir()
+    #
+    # # Initialize an empty DataFrame to store all data
+    # dataframe_total = pd.DataFrame()
+    #
+    # # Read and process each JSON file
+    # for json_file in local_data.glob('*.json'):
+    #     df = pd.read_json(json_file)
+    #     df = df['aircraft']
+    #     df = pd.DataFrame([[k, *v] for k, v in df.items()],
+    #                       columns=['hex', 'type', 'flight' 'r', 't', 'alt_baro', 'gs', 'lat', 'lon', 'alt_baro', 'gs', 'emergency'])
+    #     #print(df.info())
+    #    # "hex": "a65800", "type": "adsc", "flight": "DL295   ", "r": "N508DN", "t": "A359", "alt_baro": 39996, "gs": 454.0, "track": 244.71, "baro_rate": -16, "lat": 46.577740, "lon": -178.413162, "nic": 0, "rc": 0, "seen_pos": 190.091, "alert": 0, "spi": 0, "mlat": [], "tisb": [], "messages": 31181264, "seen": 190.1, "rssi": -49.5
+    #
+    #     # Select only the required columns
+    #   #  df = df[['hex', 'r', 't', 'lat', 'lon', 'alt_baro', 'gs', 'emergency']]
+    #
+    #     # Rename columns to desired names
+    #     df.rename(columns={
+    #         'hex': 'icao',
+    #         'r': 'registration',
+    #         't': 'type',
+    #         'lat': 'lat',
+    #         'lon': 'lon',
+    #         'alt_baro': 'altitude_baro',
+    #         'gs': 'ground_speed',
+    #     }, inplace=True)
+    #     print(df)
+    #     return "OK"
+    #
+    #     # Create "had_emergency" column
+    #     df["had_emergency"] = df["emergency"].apply(lambda e: e not in ["none", None])
+    #
+    #     # Convert "now" column to datetime and assign it to "timestamp" column
+    #     df["timestamp"] = pd.to_datetime(df["timestamp"], unit='s')
+    #
+    #     # Append the processed DataFrame to the total DataFrame
+    #     dataframe_total = pd.concat([dataframe_total, df], ignore_index=True)
+    #     print(dataframe_total)
+    #     print("hello world")
+    #     # Partition by aircraft type
+    #     for aircraft_type, group in dataframe_total.groupby('type'):
+    #         type_dir = prepared_dir / str(aircraft_type)
+    #         type_dir.mkdir(parents=True, exist_ok=True)
+    #         group.to_csv(type_dir / f"{json_file.stem}_prepared.csv", index=False)
 
     return "OK"
 
