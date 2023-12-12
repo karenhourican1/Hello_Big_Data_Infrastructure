@@ -1,3 +1,3 @@
-from exercise import clean_data_directories
-
-clean_data_directories()
+# from exercise import clean_data_directories
+#
+# clean_data_directories()
