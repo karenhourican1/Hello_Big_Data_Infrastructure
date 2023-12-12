@@ -69,8 +69,8 @@ def download_data() -> str:
                 with open(file_path.with_suffix(''), 'wb') as f_out:  # Removes the .gz suffix
                     shutil.copyfileobj(f_in, f_out)
 
-            # If you want to delete the .gz file after decompression
-            file_path.unlink()  # Be careful with this, as it deletes the file
+            # Deletes the original .gz file after decompression
+            file_path.unlink()
 
         except requests.HTTPError as http_err:
             if http_err.response.status_code == 404:
@@ -95,8 +95,6 @@ def download_data() -> str:
     #     # Append to the all_data DataFrame
     #     all_data = all_data.append(df, ignore_index=True)
 
-    #return "OK"
-
 
 @s1.post("/aircraft/prepare")
 def prepare_data() -> str:
@@ -117,41 +115,50 @@ def prepare_data() -> str:
     data
     """
     # TODO
-    download_dir = os.path.join(settings.raw_dir, "day=20231101")
-    prepared_dir = os.path.join(settings.prepared_dir, "day=20231101")
-    filenames = glob.glob(f'{download_dir}/*.json.gz')
-    for filename in filenames:
-        with open(filename, 'r') as file:
-            data = json.load(file)  # Use json.load to read JSON data
+    download_dir = Path(settings.raw_dir) / "day=20231101" / "prepared"  # Updated path to the prepared directory
+    output_dir = Path(settings.prepared_dir) / "day=20231101"  # Directory to store the processed files
+    print(output_dir)
+    # Ensure the output directory exists
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-        aircraft_data = data.get("aircraft", [])
-        timestamp = data.get("now", "")
+    # Process each file
+    for filename in glob.glob(f'{download_dir}/*.json'):
+        try:
+            with open(filename, 'r') as file:  # Open the JSON file
+                data = json.load(file)
 
-        # Extract the necessary fields into a list of dictionaries
-        extracted_data = []
-        for aircraft in aircraft_data:
-            extracted_data.append({
-                "icao": aircraft.get("hex", ""),
-                "registration": aircraft.get("r", ""),
-                "type": aircraft.get("t", ""),
-                "flight_name": aircraft.get("flight", ""),
-                "altitude_baro": aircraft.get("alt_baro", ""),
-                "ground_speed": aircraft.get("gs", ""),
-                "latitude": aircraft.get("lat", ""),
-                "longitude": aircraft.get("lon", ""),
-                "flight_status": aircraft.get("alert", ""),
-                "emergency": aircraft.get("emergency", ""),
-                "timestamp": timestamp
-            })
+            aircraft_data = data.get("aircraft", [])
+            timestamp = data.get("now", "")
 
+            extracted_data = []
+            for aircraft in aircraft_data:
+                extracted_data.append({
+                    "icao": aircraft.get("hex", ""),
+                    "registration": aircraft.get("r", ""),
+                    "type": aircraft.get("t", ""),
+                    "flight_name": aircraft.get("flight", "").strip(),  # Remove trailing spaces
+                    "altitude_baro": aircraft.get("alt_baro", ""),
+                    "ground_speed": aircraft.get("gs", ""),
+                    "latitude": aircraft.get("lat", ""),
+                    "longitude": aircraft.get("lon", ""),
+                    "flight_status": aircraft.get("alert", ""),
+                    "emergency": aircraft.get("emergency", ""),
+                    "timestamp": timestamp
+                })
 
-        # Write the prepared data to a JSON file (modify the filename as needed)
-        with open(os.path.join(prepared_dir, f'{filename}.prepared.json'), 'w') as prepared_file:
-            json.dump(extracted_data, prepared_file, indent=4)  # Use json.dump to write JSON data
+            # Write to a new file in the output directory
+            output_filename = os.path.join(output_dir, f'{Path(filename).stem}.processed.json')
+            with open(output_filename, 'w') as output_file:
+                json.dump(extracted_data, output_file, indent=4)
+
+        except Exception as e:
+            print(f"An error occurred while processing {filename}: {e}")
+
+    return "OK"
     # data_dir = Path(settings.raw_dir) / "day=20231101"
     # prepared_dir = data_dir / "prepared"
     # local_data = Path(settings.local_dir)
-        print(extracted_data)
+
 
     # Clean the prepared directory
     # if prepared_dir.exists():
@@ -202,7 +209,7 @@ def prepare_data() -> str:
     #         type_dir.mkdir(parents=True, exist_ok=True)
     #         group.to_csv(type_dir / f"{json_file.stem}_prepared.csv", index=False)
 
-    return "OK"
+    #return "OK"
 
 
 @s1.get("/aircraft/")
