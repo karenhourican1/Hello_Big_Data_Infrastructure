@@ -262,21 +262,25 @@ def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0) -> 
     prepared_dir = Path(settings.prepared_dir) / "day=20231101"
 
     if not prepared_dir.exists():
+        print("Prepared directory not found")
         raise HTTPException(status_code=404, detail="Prepared data not found")
 
     positions = []
 
     for json_file in prepared_dir.glob("*.processed.json"):
+        print(f"Processing file: {json_file}")
         try:
             with open(json_file, 'r') as file:
                 data = json.load(file)
                 for record in data:
+                    print(f"Current record icao: {record['icao']}, Input icao: {icao}")
                     if record["icao"] == icao:
                         positions.append({
                             "timestamp": record["timestamp"],
                             "lat": record["latitude"],
                             "lon": record["longitude"]
                         })
+                        print(f"Added position: {positions[-1]}")
         except json.decoder.JSONDecodeError as e:
             print(f"Error reading file {json_file}: {e}")
             continue
@@ -288,6 +292,7 @@ def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0) -> 
     start = page * num_results
     end = start + num_results
     paginated_positions = positions[start:end]
+    print(f"Returning positions: {paginated_positions}")
 
     return paginated_positions
 
