@@ -51,7 +51,7 @@ def download_data() -> str:
     download_dir = Path(settings.raw_dir) / "day=20231101"
     download_dir.mkdir(parents=True, exist_ok=True)
 
-    for i in range(0, 1000, 5):  # Adjusted the range to increment by 5
+    for i in range(0, 1000):  # Adjusted the range to increment by 5
         file_name = f"{i:06}Z.json.gz"
         file_url = f"{BASE_URL}{file_name}"
         file_path = download_dir / file_name
@@ -70,9 +70,12 @@ def download_data() -> str:
                     shutil.copyfileobj(f_in, f_out)
 
             # If you want to delete the .gz file after decompression
-            #file_path.unlink()  # Be careful with this, as it deletes the file
+            file_path.unlink()  # Be careful with this, as it deletes the file
 
         except requests.HTTPError as http_err:
+            if http_err.response.status_code == 404:
+                # Silently ignore 404 errors and continue with the next iteration
+                continue
             print(f"HTTP error occurred: {http_err}")
         except Exception as err:
             print(f"An error occurred: {err}")
