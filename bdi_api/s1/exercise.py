@@ -1,4 +1,5 @@
 import glob
+import gzip
 
 from fastapi import APIRouter, status, HTTPException
 from pandas import read_json
@@ -14,7 +15,7 @@ import shutil
 
 settings = Settings()
 
-#BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
+BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
 
 s1 = APIRouter(
     responses={
@@ -47,21 +48,51 @@ def download_data() -> str:
     """
         Process the JSON files that are already downloaded and stored in the folder data/raw
         """
-    data_dir = Path(settings.raw_dir) / "day=20231101"
-    if not data_dir.exists():
-        return "Data directory does not exist."
+    download_dir = Path(settings.raw_dir) / "day=20231101"
+    download_dir.mkdir(parents=True, exist_ok=True)
 
-    # Initialize an empty DataFrame to hold all the data
-    all_data = pd.DataFrame()
+    for i in range(0, 1000, 5):  # Adjusted the range to increment by 5
+        file_name = f"{i:06}Z.json.gz"
+        file_url = f"{BASE_URL}{file_name}"
+        file_path = download_dir / file_name
 
-    # Process each JSON file
-    for json_file in data_dir.glob('*.json'):
-        # Read the file into a DataFrame
-        df = pd.read_json(json_file)
-        # Append to the all_data DataFrame
-        all_data = all_data.append(df, ignore_index=True)
+        # Download the .gz file
+        try:
+            response = requests.get(file_url)
+            response.raise_for_status()
+
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+
+            # Now, you may want to decompress it right away
+            with gzip.open(file_path, 'rb') as f_in:
+                with open(file_path.with_suffix(''), 'wb') as f_out:  # Removes the .gz suffix
+                    shutil.copyfileobj(f_in, f_out)
+
+            # If you want to delete the .gz file after decompression
+            #file_path.unlink()  # Be careful with this, as it deletes the file
+
+        except requests.HTTPError as http_err:
+            print(f"HTTP error occurred: {http_err}")
+        except Exception as err:
+            print(f"An error occurred: {err}")
 
     return "OK"
+    # data_dir = Path(settings.raw_dir) / "day=20231101"
+    # if not data_dir.exists():
+    #     return "Data directory does not exist."
+    #
+    # # Initialize an empty DataFrame to hold all the data
+    # all_data = pd.DataFrame()
+    #
+    # # Process each JSON file
+    # for json_file in data_dir.glob('*.json'):
+    #     # Read the file into a DataFrame
+    #     df = pd.read_json(json_file)
+    #     # Append to the all_data DataFrame
+    #     all_data = all_data.append(df, ignore_index=True)
+
+    #return "OK"
 
 
 @s1.post("/aircraft/prepare")
