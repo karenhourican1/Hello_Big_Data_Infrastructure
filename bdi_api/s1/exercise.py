@@ -319,9 +319,21 @@ def get_aircraft_statistics(icao: str) -> dict:
             data = json.load(file)
             for record in data:
                 if record["icao"] == icao:
-                    max_altitude_baro = max(max_altitude_baro, record.get("altitude_baro", 0))
-                    max_ground_speed = max(max_ground_speed, record.get("ground_speed", 0))
-                    if record.get("emergency", ""):  # Assuming non-empty string indicates emergency
+                    # Check and convert altitude_baro if it's numeric
+                    altitude_baro = record.get("altitude_baro", "0")
+                    if altitude_baro.isdigit():
+                        max_altitude_baro = max(max_altitude_baro, int(altitude_baro))
+
+                    # Check and convert ground_speed if it's numeric
+                    ground_speed = record.get("ground_speed", "0")
+                    try:
+                        ground_speed = float(ground_speed)
+                        max_ground_speed = max(max_ground_speed, ground_speed)
+                    except ValueError:
+                        pass
+
+                    # Check for emergency
+                    if record.get("emergency", "") not in ["", "none"]:
                         had_emergency = True
 
     return {
