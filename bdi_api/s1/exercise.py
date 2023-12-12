@@ -215,7 +215,6 @@ def prepare_data() -> str:
 
     #return "OK"
 
-
 @s1.get("/aircraft/")
 def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
     """List all the available aircraft, its registration and type ordered by
@@ -233,13 +232,15 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
     for json_file in prepared_dir.glob("*.json"):
         with open(json_file, 'r') as file:
             data = json.load(file)
+            print(f"Data read from {json_file}: {data}")  # Debugging print
             for aircraft in data:
-                aircraft_list.append({
-                    "icao": aircraft["icao"],
-                    "registration": aircraft["registration"],
-                    "type": aircraft["type"]
-                })
-
+                aircraft_info = {
+                    "icao": aircraft.get("icao", ""),
+                    "registration": aircraft.get("registration", ""),
+                    "type": aircraft.get("type", "")
+                }
+                print(f"Aircraft info extracted: {aircraft_info}")  # Debugging print
+                aircraft_list.append(aircraft_info)
     # Sort the list of aircraft by the 'icao' code in ascending order
     aircraft_list.sort(key=lambda x: x['icao'])
 
