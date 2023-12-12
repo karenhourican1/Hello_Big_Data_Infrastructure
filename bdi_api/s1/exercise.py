@@ -341,3 +341,23 @@ def get_aircraft_statistics(icao: str) -> dict:
         "max_ground_speed": max_ground_speed,
         "had_emergency": had_emergency
     }
+
+
+def clean_data_directories():
+    raw_dir = Path(settings.raw_dir) / "day=20231101"
+    prepared_dir = Path(settings.prepared_dir) / "day=20231101"
+
+    # Delete files in the raw data directory
+    if raw_dir.exists() and raw_dir.is_dir():
+        shutil.rmtree(raw_dir)
+        print(f"Deleted all files in {raw_dir}")
+
+    # Delete files in the prepared data directory
+    if prepared_dir.exists() and prepared_dir.is_dir():
+        shutil.rmtree(prepared_dir)
+        print(f"Deleted all files in {prepared_dir}")
+
+    # Recreate the empty directories
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    prepared_dir.mkdir(parents=True, exist_ok=True)
+    print("Recreated empty directories")
