@@ -115,53 +115,50 @@ def prepare_data() -> str:
     data
     """
     # TODO
-    download_dir = Path(settings.raw_dir) / "day=20231101" / "prepared"  # Updated path to the prepared directory
-    output_dir = Path(settings.prepared_dir) / "day=20231101"  # Directory to store the processed files
-    print(f"Download Directory: {download_dir}")
-    print(f"Output Directory: {output_dir}")
-    # Ensure the output directory exists
-    output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"Output directory exists: {output_dir.exists()}")
+    download_dir = os.path.join(settings.raw_dir, "day=20231101")
+    prepared_dir = os.path.join(settings.prepared_dir,"day=20231101")
 
-    # Process each file
+    print(f"Download Directory: {download_dir}")
+    print(f"Output Directory: {prepared_dir}")
+
     # Process each file
     filenames = glob.glob(f'{download_dir}/*.json')
     print(f"Found {len(filenames)} files to process")
 
     for filename in filenames:
         print(f"Processing file: {filename}")
-        try:
-            with open(filename, 'r') as file:  # Open the JSON file
-                data = json.load(file)
+        with open(filename, 'r') as file:
+            data = json.load(file)
+        aircraft_data = data.get("aircraft", [])
+        timestamp = data.get("now", "")
 
-            aircraft_data = data.get("aircraft", [])
-            timestamp = data.get("now", "")
+        # Extract required fields into a list of dictionaries
+        extracted_data = []
+        for aircraft in aircraft_data:
+            extracted_data.append({
+                "icao": aircraft.get("hex", ""),
+                "registration": aircraft.get("r", ""),
+                "type": aircraft.get("t", ""),
+                "flight_name": aircraft.get("flight", "").strip(),  # Remove trailing spaces
+                "altitude_baro": aircraft.get("alt_baro", ""),
+                "ground_speed": aircraft.get("gs", ""),
+                "latitude": aircraft.get("lat", ""),
+                "longitude": aircraft.get("lon", ""),
+                "flight_status": aircraft.get("alert", ""),
+                "emergency": aircraft.get("emergency", ""),
+                "timestamp": timestamp
+            })
+        # Write the processed data to a new file in the prepared directory
+        output_filename = os.path.join(prepared_dir, f'{Path(filename).stem}.processed.json')
+        with open(output_filename, 'w') as output_file:
+            json.dump(extracted_data, output_file, indent=4)
 
-            extracted_data = []
-            for aircraft in aircraft_data:
-                extracted_data.append({
-                    "icao": aircraft.get("hex", ""),
-                    "registration": aircraft.get("r", ""),
-                    "type": aircraft.get("t", ""),
-                    "flight_name": aircraft.get("flight", "").strip(),  # Remove trailing spaces
-                    "altitude_baro": aircraft.get("alt_baro", ""),
-                    "ground_speed": aircraft.get("gs", ""),
-                    "latitude": aircraft.get("lat", ""),
-                    "longitude": aircraft.get("lon", ""),
-                    "flight_status": aircraft.get("alert", ""),
-                    "emergency": aircraft.get("emergency", ""),
-                    "timestamp": timestamp
-                })
-
-            # Write to a new file in the output directory
-            output_filename = os.path.join(output_dir, f'{Path(filename).stem}.processed.json')
-            with open(output_filename, 'w') as output_file:
-                json.dump(extracted_data, output_file, indent=4)
-
-        except Exception as e:
-            print(f"An error occurred while processing {filename}: {e}")
+        print(f"Data written to {output_filename}")
 
     return "OK"
+
+
+
     # data_dir = Path(settings.raw_dir) / "day=20231101"
     # prepared_dir = data_dir / "prepared"
     # local_data = Path(settings.local_dir)
