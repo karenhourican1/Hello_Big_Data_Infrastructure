@@ -245,12 +245,12 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
     # Sort the list of aircraft by the 'icao' code in ascending order
     aircraft_list.sort(key=lambda x: x['icao'])
 
-    # Implement pagination
-    start = page * num_results
-    end = start + num_results
-    paginated_aircraft = aircraft_list[start:end]
+    # # Implement pagination
+    # start = page * num_results
+    # end = start + num_results
+    # paginated_aircraft = aircraft_list[start:end]
 
-    return paginated_aircraft
+    return aircraft_list
 
 
 @s1.get("/aircraft/{icao}/positions")
@@ -259,7 +259,37 @@ def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0) -> 
     If an aircraft is not found, return an empty list.
     """
     # TODO
-    return [{"timestamp": 1609275898.6, "lat": 30.404617, "lon": -86.476566}]
+    prepared_dir = Path(settings.prepared_dir) / "day=20231101"
+
+    if not prepared_dir.exists():
+        raise HTTPException(status_code=404, detail="Prepared data not found")
+
+    positions = []
+
+    for json_file in prepared_dir.glob("*.processed.json"):
+        try:
+            with open(json_file, 'r') as file:
+                data = json.load(file)
+                for record in data:
+                    if record["icao"] == icao:
+                        positions.append({
+                            "timestamp": record["timestamp"],
+                            "lat": record["latitude"],
+                            "lon": record["longitude"]
+                        })
+        except json.decoder.JSONDecodeError as e:
+            print(f"Error reading file {json_file}: {e}")
+            continue
+
+    # Sort positions by timestamp
+    positions.sort(key=lambda x: x['timestamp'])
+
+    # Implement pagination
+    start = page * num_results
+    end = start + num_results
+    paginated_positions = positions[start:end]
+
+    return paginated_positions
 
 
 @s1.get("/aircraft/{icao}/stats")
