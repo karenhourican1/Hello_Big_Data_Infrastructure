@@ -230,17 +230,18 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
 
     # Read the prepared JSON files and collect aircraft data
     for json_file in prepared_dir.glob("*.json"):
-        with open(json_file, 'r') as file:
-            data = json.load(file)
-            print(f"Data read from {json_file}: {data}")  # Debugging print
-            for aircraft in data:
-                aircraft_info = {
-                    "icao": aircraft.get("icao", ""),
-                    "registration": aircraft.get("registration", ""),
-                    "type": aircraft.get("type", "")
-                }
-                print(f"Aircraft info extracted: {aircraft_info}")  # Debugging print
-                aircraft_list.append(aircraft_info)
+        try:
+            with open(json_file, 'r') as file:
+                data = json.load(file)
+                for aircraft in data:
+                    aircraft_list.append({
+                        "icao": aircraft["icao"],
+                        "registration": aircraft["registration"],
+                        "type": aircraft["type"]
+                    })
+        except json.decoder.JSONDecodeError as e:
+            print(f"Error reading file {json_file}: {e}")
+            continue  # Skip this file and continue with the next
     # Sort the list of aircraft by the 'icao' code in ascending order
     aircraft_list.sort(key=lambda x: x['icao'])
 
