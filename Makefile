@@ -11,34 +11,51 @@
 SHELL=bash
 
 export DOCKER_REPOSITORY=XXXX.dkr.ecr.us-east-1.amazonaws.com
-export DOCKER_FILE=docker/Dockerfile
-export DOCKER_COMPOSE_FILE=docker/docker-compose.yml
+export DOCKER_FILE=${DOCKER_FILE_OW:-"docker/Dockerfile"}
+DOCKER_COMPOSE_FILE := ${DOCKER_COMPOSE_FILE-docker/compose.yaml}
 
-export IMAGE_TAG=$(shell poetry version -s)
-export SERVICE_NAME=$(poetry version | awk '{print $1}')
-export IMAGE_NAME=${DOCKER_REPOSITORY}/${SERVICE_NAME}
+compose_file = compose.yaml
+service = bdi-api
+image_name = $(service)# ${DOCKER_REPOSITORY}/${SERVICE_NAME}
+tag = $(shell poetry version -s)
+
+export SERVICE_NAME=$(poetry version | awk '{print $$1}')
+export IMAGE_NAME=${SERVICE_NAME}  # ${DOCKER_REPOSITORY}/${SERVICE_NAME}
 export GIT_REPO=$(shell git config --get remote.origin.url | sed -E 's/^\s*.*:\/\///g')
 export GIT_COMMIT=$(shell git rev-parse HEAD)
+
+run:
+    uvicorn bdi_api.app:app --proxy-header --host 0.0.0.0 --port 8080
 
 test:
 	pytest -cov=bdi_api --cov-report=html
 
 build:
-	@echo "Building image $(IMAGE_NAME):$(IMAGE_TAG)"
-	docker compose -f ${DOCKER_COMPOSE_FILE} build ${SERVICE_NAME}
-	IMAGE_TAG=latest docker compose -f ${DOCKER_COMPOSE_FILE} build ${SERVICE_NAME}
+	@echo "Building image $(service):$(tag) from $(compose_file)"
+	IMAGE_TAG="$(tag)" IMAGE_NAME=$(image_name) docker compose -f docker/$(compose_file) build $(service)
+	docker tag "$(image_name)":"$(tag)" "$(image_name)":latest
+
+monitoring:
+	docker compose -f docker/monitor/uptrace.yaml up -d
 
 
-run_local: build
-	docker compose -f ${DOCKER_COMPOSE_FILE} stop
-	docker compose -f ${DOCKER_COMPOSE_FILE} up -d
+run_docker: build
+	IMAGE_TAG="$(tag)" IMAGE_NAME=$(image_name) docker compose -f docker/$(compose_file) stop
+	IMAGE_TAG="$(tag)" IMAGE_NAME=$(image_name) docker compose -f docker/$(compose_file) up -d
 	@echo "You can check now http://localhost:8080/docs"
+
+stop_docker:
+	IMAGE_TAG="$(tag)" IMAGE_NAME=$(image_name) docker compose -f docker/$(compose_file) stop
+
+
+ps:
+	IMAGE_TAG="$(tag)" IMAGE_NAME=$(image_name) docker compose -f docker/$(compose_file) ps
 
 test_api: run_local
 	st run --checks all http://localhost:8080/openapi.json -H "Authorization: Bearer TOKEN"
 
 logs:
-	docker compose -f ${DOCKER_COMPOSE_FILE} logs ${SERVICE_NAME}
+	IMAGE_TAG="$(tag)" IMAGE_NAME=$(image_name) docker compose -f docker/$(compose_file) logs $(service)
 
 config:
 	docker compose -f ${DOCKER_COMPOSE_FILE} config
