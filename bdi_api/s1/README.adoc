@@ -22,3 +22,13 @@ TIP: Explore how to write clean and concise code in python. Best practices and t
 2. Go to your GitHub's commit history, take a screenshot and upload it to campus
 
 I'll use the latest commit shown in the snapshot to evaluate your code.
+
+
+== Links of interest
+
+TIP: Try not to use Windows and use WSL2 instead: a linux "layer" for windows.
+https://www.youtube.com/watch?v=28Ei63qtquQ[Windows 11] https://www.youtube.com/watch?v=_fntjriRe48[windows 10]
+
+* https://www.youtube.com/watch?v=hwP7WQkmECE[Git Explained in 100 Seconds]
+* https://www.youtube.com/watch?v=Qks3eqlImy8[Poetry: Professional Project & Dependency Management in Python]
+* https://www.youtube.com/watch?v=0f3moPe_bhk[ How to Create and Use Virtual Environments in Python With Poetry]

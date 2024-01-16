@@ -11,6 +11,7 @@ from starlette.responses import JSONResponse
 import bdi_api
 from bdi_api.examples import v0_router
 from bdi_api.s1.exercise import s1
+from bdi_api.s4.exercise import s4
 from bdi_api.settigns import Settings
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ uptrace.configure_opentelemetry(
 FastAPIInstrumentor.instrument_app(app)
 app.include_router(v0_router)
 app.include_router(s1)
+app.include_router(s4)
 
 
 @app.get("/health", status_code=200)
