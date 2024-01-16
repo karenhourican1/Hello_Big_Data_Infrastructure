@@ -3,10 +3,10 @@ import json
 import logging
 import multiprocessing
 import os
-from os.path import join
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
+from os.path import join
 from random import randint
 from typing import Tuple
 
@@ -22,6 +22,7 @@ BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
+
 
 class ExtractFiles(HTMLParser):
     files: list[str] = []
@@ -88,6 +89,7 @@ def download_data() -> str:
         executor.map(download_file, files)
     return "OK"
 
+
 @tracer.start_as_current_span("compress_files")
 def compress_files(files: list[str], target_file: str) -> None:
     def extract_row(ac: dict, ts: float) -> dict:
@@ -113,6 +115,8 @@ def compress_files(files: list[str], target_file: str) -> None:
                 for ac in data["aircraft"]:
                     json.dump(extract_row(ac, ts), write_f)
                     write_f.write("\n")
+
+
 @s1.post("/aircraft/prepare")
 def prepare_data() -> str:
     """Prepare the data in the way you think it's better for the analysis.
@@ -135,17 +139,15 @@ def prepare_data() -> str:
         shutil.rmtree(tmp_dir)
     os.makedirs(tmp_dir, exist_ok=True)
 
-
-
     files = []
-    for (_, _, filenames) in os.walk(raw_dir):
+    for _, _, filenames in os.walk(raw_dir):
         files.extend(join(raw_dir, name) for name in filenames)
 
     batch_size = 50
-    batches = [(
-        files[i:i + batch_size],
-        join(tmp_dir, f"ac_{randint(0, 99999):05d}.json")
-    ) for i in range(0, len(files), batch_size)]
+    batches = [
+        (files[i : i + batch_size], join(tmp_dir, f"ac_{randint(0, 99999):05d}.json"))
+        for i in range(0, len(files), batch_size)
+    ]
     with multiprocessing.Pool(4) as pool:
         pool.starmap(compress_files, batches)
     logging.info("Compression ended")
@@ -156,11 +158,13 @@ def prepare_data() -> str:
         logging.info("Reading from tmp dir")
         if os.path.exists(settings.prepared_dir):
             shutil.rmtree(settings.prepared_dir)
-        duckdb.sql(f"""SET memory_limit = '5GB';SET threads TO 4;COPY (SELECT *, hex[:1] AS hex_start
+        duckdb.sql(
+            f"""SET memory_limit = '5GB';SET threads TO 4;COPY (SELECT *, hex[:1] AS hex_start
         FROM read_json_auto('{tmp_dir}/*') ORDER BY hex, ts
         ) TO '{settings.prepared_dir}'
         (FORMAT PARQUET, partition_by (hex_start))
-        """)
+        """
+        )
         logger.info("Ended")
 
     to_parquet()

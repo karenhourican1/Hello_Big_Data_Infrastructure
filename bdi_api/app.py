@@ -2,11 +2,11 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+import uptrace
 from fastapi import FastAPI
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from starlette import status
 from starlette.responses import JSONResponse
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-import uptrace
 
 import bdi_api
 from bdi_api.examples import v0_router
@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     yield
     # Shut Down
     logger.warning("Application shutdown")
+
 
 app = FastAPI(
     title=bdi_api.__name__,
@@ -57,6 +58,7 @@ async def get_version() -> dict:
 
 def main() -> None:
     import uvicorn
+
     uvicorn.run(app, host="localhost", port=8000, access_log=False)
 
 
