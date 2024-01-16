@@ -11,7 +11,8 @@ PROJECT_DIR = dirname(dirname(bdi_api.__file__))
 class Settings(BaseSettings):
 
     local_dir: str = Field(default=join(PROJECT_DIR, "data"), description="For any other value set env variable 'BDI_LOCAL_DIR'")
-
+    telemetry_dsn: str = "http://project2_secret_token@uptrace:14317/2"
+    s3_bucket: str = Field(default="bdi-test", description="Call the api like `BDI_S3_BUCKET=yourbucket poetry run uvicorn...`")
     model_config = SettingsConfigDict(env_prefix='bdi_')
 
     @property

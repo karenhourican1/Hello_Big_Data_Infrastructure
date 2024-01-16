@@ -35,6 +35,10 @@ build:
 	IMAGE_TAG="$(tag)" IMAGE_NAME=$(image_name) docker compose -f docker/$(compose_file) build $(service)
 	docker tag "$(image_name)":"$(tag)" "$(image_name)":latest
 
+build_docker:
+	@echo "Building image $(service):$(tag) from docker/Dockerfile"
+    docker build -t bdi_api:latest -f docker/Dockerfile .
+
 monitoring:
 	docker compose -f docker/monitor/uptrace.yaml up -d
 
