@@ -13,7 +13,6 @@ from bdi_api.s1.exercise import s1
 
 logger = logging.getLogger(__name__)
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator:
     logger.info("Application started. You can check the documentation in https://localhost:8000/docs/")

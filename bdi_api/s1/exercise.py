@@ -105,6 +105,11 @@ def prepare_data() -> str:
     download_dir = os.path.join(settings.raw_dir, "day=20231101")
     prepared_dir = os.path.join(settings.prepared_dir,"day=20231101")
 
+    # Create the prepared directory if it doesn't exist
+    if not os.path.exists(prepared_dir):
+        os.makedirs(prepared_dir, exist_ok=True)
+        print("The directory has been created")
+
     # Process each file
     filenames = glob.glob(f'{download_dir}/*.json')
     print(f"Found {len(filenames)} files to process")
