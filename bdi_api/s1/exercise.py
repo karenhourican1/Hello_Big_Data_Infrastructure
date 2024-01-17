@@ -48,10 +48,14 @@ def download_data() -> str:
     """
         Process the JSON files that are already downloaded and stored in the folder data/raw
         """
+
     download_dir = Path(settings.raw_dir) / "day=20231101"
     download_dir.mkdir(parents=True, exist_ok=True)
 
-    for i in range(0, 1000):  # Adjusted the range to increment by 5
+    not_found_count = 0
+    error_count = 0
+
+    for i in range(1000):
         file_name = f"{i:06}Z.json.gz"
         file_url = f"{BASE_URL}{file_name}"
         file_path = download_dir / file_name
@@ -74,12 +78,15 @@ def download_data() -> str:
 
         except requests.HTTPError as http_err:
             if http_err.response.status_code == 404:
+                not_found_count += 1
                 # Silently ignore 404 errors and continue with the next iteration
                 continue
+            error_count += 1
             print(f"HTTP error occurred: {http_err}")
         except Exception as err:
+            error_count += 1
             print(f"An error occurred: {err}")
-
+    print(f"Completed with {not_found_count} files not found and {error_count} other errors.")
     return "OK"
 
 
