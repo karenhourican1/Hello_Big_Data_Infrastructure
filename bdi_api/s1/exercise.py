@@ -108,7 +108,7 @@ def prepare_data() -> str:
     # Create the prepared directory if it doesn't exist
     if not os.path.exists(prepared_dir):
         os.makedirs(prepared_dir, exist_ok=True)
-        print("The directory has been created")
+        print("The prepared directory has been created")
 
     # Process each file
     filenames = glob.glob(f'{download_dir}/*.json')
