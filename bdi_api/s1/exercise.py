@@ -12,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 import json
 import shutil
+from bs4 import BeautifulSoup
 
 settings = Settings()
 
@@ -52,47 +53,86 @@ def download_data() -> str:
     download_dir = Path(settings.raw_dir) / "day=20231101"
     download_dir.mkdir(parents=True, exist_ok=True)
 
+    try:
+        # Fetch file list
+        response = requests.get(BASE_URL)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        file_list = [a['href'] for a in soup.find_all('a') if a['href'].endswith('Z.json.gz')]
+
+        for file_name in file_list[:1000]:  # Limit to the first 1000 files
+            file_url = f"{BASE_URL}{file_name}"
+            file_path = download_dir / file_name
+
+            try:
+                # Download the .gz file
+                file_response = requests.get(file_url)
+                file_response.raise_for_status()
+
+                with open(file_path, 'wb') as f:
+                    f.write(file_response.content)
+
+                # Decompress the files
+                with gzip.open(file_path, 'rb') as f_in:
+                    with open(file_path.with_suffix(''), 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+
+                # Delete the original .gz file
+                file_path.unlink()
+
+            except requests.HTTPError as http_err:
+                print(f"HTTP error occurred while downloading {file_name}: {http_err}")
+            except Exception as err:
+                print(f"An error occurred while downloading {file_name}: {err}")
+
+    except requests.RequestException as e:
+        print(f"Error fetching file list: {e}")
+        return "Error"
+
+    print("Download completed.")
+    return "OK"
+
     not_found_count = 0
     error_count = 0
 
-    start_file = 905  # Starting from 000905Z.json.gz
-    end_file = 1000
+    # start_file = 905  # Starting from 000905Z.json.gz
+    # end_file = 1000
 
-    for i in range(start_file, start_file + end_file * 5, 5):
-        file_name = f"{i:06}Z.json.gz"
-        file_url = f"{BASE_URL}{file_name}"
-        file_path = download_dir / file_name
+    # for i in range(1000):
+    #     file_name = f"{i:06}Z.json.gz"
+    #     file_url = f"{BASE_URL}{file_name}"
+    #     file_path = download_dir / file_name
+    #
+    #     print(f"Attempting to download file: {file_name}")  # Print the file number before the download attempt
 
-        print(f"Attempting to download file: {file_name}")  # Print the file number before the download attempt
+        # # Download the .gz file
+        # try:
+        #     response = requests.get(file_url)
+        #     response.raise_for_status()
+        #
+        #     with open(file_path, 'wb') as f:
+        #         f.write(response.content)
+        #
+        #     # Decompress the files
+        #     with gzip.open(file_path, 'rb') as f_in:
+        #         with open(file_path.with_suffix(''), 'wb') as f_out:  # Removes the .gz suffix
+        #             shutil.copyfileobj(f_in, f_out)
+        #
+        #     # Deletes the original .gz file after decompression
+        #     file_path.unlink()
 
-        # Download the .gz file
-        try:
-            response = requests.get(file_url)
-            response.raise_for_status()
-
-            with open(file_path, 'wb') as f:
-                f.write(response.content)
-
-            # Decompress the files
-            with gzip.open(file_path, 'rb') as f_in:
-                with open(file_path.with_suffix(''), 'wb') as f_out:  # Removes the .gz suffix
-                    shutil.copyfileobj(f_in, f_out)
-
-            # Deletes the original .gz file after decompression
-            file_path.unlink()
-
-        except requests.HTTPError as http_err:
-            if http_err.response.status_code == 404:
-                not_found_count += 1
-                # Silently ignore 404 errors and continue with the next iteration
-                continue
-            error_count += 1
-            print(f"HTTP error occurred: {http_err}")
-        except Exception as err:
-            error_count += 1
-            print(f"An error occurred: {err}")
-    print(f"Completed with {not_found_count} files not found and {error_count} other errors.")
-    return "OK"
+    #     except requests.HTTPError as http_err:
+    #         if http_err.response.status_code == 404:
+    #             not_found_count += 1
+    #             # Silently ignore 404 errors and continue with the next iteration
+    #             continue
+    #         error_count += 1
+    #         print(f"HTTP error occurred: {http_err}")
+    #     except Exception as err:
+    #         error_count += 1
+    #         print(f"An error occurred: {err}")
+    # print(f"Completed with {not_found_count} files not found and {error_count} other errors.")
+    # return "OK"
 
 
 @s1.post("/aircraft/prepare")
