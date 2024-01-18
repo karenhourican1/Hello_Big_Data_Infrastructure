@@ -55,10 +55,15 @@ def download_data() -> str:
     not_found_count = 0
     error_count = 0
 
-    for i in range(1000):
+    start_file = 905  # Starting from 000905Z.json.gz
+    end_file = 1000
+
+    for i in range(start_file, start_file + end_file * 5, 5):
         file_name = f"{i:06}Z.json.gz"
         file_url = f"{BASE_URL}{file_name}"
         file_path = download_dir / file_name
+
+        print(f"Attempting to download file: {file_name}")  # Print the file number before the download attempt
 
         # Download the .gz file
         try:
