@@ -92,48 +92,6 @@ def download_data() -> str:
     print("Download completed.")
     return "OK"
 
-    # not_found_count = 0
-    # error_count = 0
-
-    # start_file = 905  # Starting from 000905Z.json.gz
-    # end_file = 1000
-
-    # for i in range(1000):
-    #     file_name = f"{i:06}Z.json.gz"
-    #     file_url = f"{BASE_URL}{file_name}"
-    #     file_path = download_dir / file_name
-    #
-    #     print(f"Attempting to download file: {file_name}")  # Print the file number before the download attempt
-
-        # # Download the .gz file
-        # try:
-        #     response = requests.get(file_url)
-        #     response.raise_for_status()
-        #
-        #     with open(file_path, 'wb') as f:
-        #         f.write(response.content)
-        #
-        #     # Decompress the files
-        #     with gzip.open(file_path, 'rb') as f_in:
-        #         with open(file_path.with_suffix(''), 'wb') as f_out:  # Removes the .gz suffix
-        #             shutil.copyfileobj(f_in, f_out)
-        #
-        #     # Deletes the original .gz file after decompression
-        #     file_path.unlink()
-
-    #     except requests.HTTPError as http_err:
-    #         if http_err.response.status_code == 404:
-    #             not_found_count += 1
-    #             # Silently ignore 404 errors and continue with the next iteration
-    #             continue
-    #         error_count += 1
-    #         print(f"HTTP error occurred: {http_err}")
-    #     except Exception as err:
-    #         error_count += 1
-    #         print(f"An error occurred: {err}")
-    # print(f"Completed with {not_found_count} files not found and {error_count} other errors.")
-    # return "OK"
-
 
 @s1.post("/aircraft/prepare")
 def prepare_data() -> str:
