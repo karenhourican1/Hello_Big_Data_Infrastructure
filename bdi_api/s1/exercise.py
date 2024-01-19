@@ -92,8 +92,8 @@ def download_data() -> str:
     print("Download completed.")
     return "OK"
 
-    not_found_count = 0
-    error_count = 0
+    # not_found_count = 0
+    # error_count = 0
 
     # start_file = 905  # Starting from 000905Z.json.gz
     # end_file = 1000
@@ -207,6 +207,7 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
     if not prepared_dir.exists():
         raise HTTPException(status_code=404, detail="Prepared data not found")
 
+    aircraft_set = set()
     aircraft_list = []
 
     # Read the prepared JSON files and collect aircraft data
@@ -215,11 +216,15 @@ def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
             with open(json_file, 'r') as file:
                 data = json.load(file)
                 for aircraft in data:
-                    aircraft_list.append({
-                        "icao": aircraft["icao"],
-                        "registration": aircraft["registration"],
-                        "type": aircraft["type"]
-                    })
+                    icao = aircraft["icao"]
+                    if icao not in aircraft_set:
+                        aircraft_set.add(icao)
+                        aircraft_list.append({
+                            "icao": icao,
+                            "registration": aircraft["registration"],
+                            "type": aircraft["type"]
+                        })
+
         except json.decoder.JSONDecodeError as e:
             print(f"Error reading file {json_file}: {e}")
             continue  # Skip this file and continue with the next
