@@ -5,25 +5,32 @@ description = "Exercises for the BTS Big Data Infrastructure course"
 readme = "README.adoc"
 authors = [
     "Marti Segarra <marti.segarra@bts.tech>",
-    "Your name <your.email@bts.tech" # TODO
+    "Your name <karen.hourican@bts.tech"
 ]
 packages = [{include = "bdi_api"}]
 
-
+[tool.poetry.scripts]
+start = "bdi_api.app:main"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 fastapi = "^0.104.1"
-uvicorn = "^0.23.2"
+uvicorn = "^0.24.0"  # Updated to latest version from new project
 pydantic = "^2.4"
 pydantic-settings = "^2.0"
-boto3 = "^1.26.127"
+boto3 = "^1.33.7"  # Updated to latest version from new project
 duckdb = "^0.9.2"
-# Add your dependencies here
-importlib-metadata = "^7.0.0"
-requests = "^2.31.0"
+importlib-metadata = "^6.0"
+requests = "^2.31.0"  # Retained version from original project
 pandas = "^2.1.4"
 beautifulsoup4 = "^4.12.3"
+urllib3 = "<2"  # Added from new project
+# Monitoring
+uptrace = "^1.21.0"
+opentelemetry-api = "^1.21.0"
+opentelemetry-sdk = "^1.21.0"
+opentelemetry-instrumentation-fastapi = "0.42b0"
+boto = "^2.49.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.5.0"
@@ -36,7 +43,10 @@ pytest-asyncio = "^0.21"
 moto = "^4.2.2"
 hypothesis = "^6"
 schemathesis = "^3.20"
-
+ruff = "^0.1.9"
+lxml = "^5.0.0"
+pytest-json-report = "^1.5.0"
+gitpython = "^3.1.40"
 
 [tool.pytest.ini_options]
 pythonpath = [
@@ -48,7 +58,6 @@ addopts = "-p no:warnings"
 testpaths = [
     "tests",
 ]
-
 
 [tool.ruff]
 line-length = 120
@@ -66,11 +75,9 @@ select = [
 ]
 ignore = []
 
-# Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
 unfixable = []
 
-# Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.format]
@@ -78,7 +85,6 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
-
 
 [tool.mypy]
 
