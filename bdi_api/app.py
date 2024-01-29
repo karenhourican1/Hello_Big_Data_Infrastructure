@@ -2,7 +2,6 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from fastapi import FastAPI
 import uptrace
 from fastapi import FastAPI
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -16,6 +15,7 @@ from bdi_api.s4.exercise import s4
 from bdi_api.settigns import Settings
 
 logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator:
@@ -63,6 +63,7 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="localhost", port=8000, access_log=False)
+
 
 def main() -> None:
     import uvicorn

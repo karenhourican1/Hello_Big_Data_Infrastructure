@@ -9,6 +9,11 @@ from pathlib import Path
 import json
 from bs4 import BeautifulSoup
 
+import logging
+from botocore.exceptions import BotoCoreError, ClientError
+
+logger = logging.getLogger(__name__)
+
 settings = Settings()
 BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
 
@@ -53,6 +58,9 @@ def download_data() -> str:
 
         return "OK"
 
+    except (ClientError, BotoCoreError) as e:
+        logger.error(f"Error occurred during S3 operation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
