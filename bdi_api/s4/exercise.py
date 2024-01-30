@@ -36,10 +36,12 @@ def download_data() -> str:
     """
     # BASE_URL
     s3_bucket = settings.s3_bucket
+    print(s3_bucket)
     s3_prefix_path = "raw/day=20231101/"
     s3_client = boto3.client('s3')
 
     try:
+        print(BASE_URL)
         response = requests.get(BASE_URL)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -50,6 +52,7 @@ def download_data() -> str:
             response = requests.get(file_url)
             response.raise_for_status()
 
+            print(s3_bucket)
             s3_client.put_object(
                 Bucket=s3_bucket,
                 Key=f"{s3_prefix_path}{file_name}",
