@@ -7,6 +7,14 @@ import bdi_api
 
 PROJECT_DIR = dirname(dirname(bdi_api.__file__))
 
+class DBCredentials(BaseSettings):
+    """Use env variables prefixed with BDI_DB_"""
+
+    host: str
+    port: int = 5432
+    username: str
+    password: str
+    model_config = SettingsConfigDict(env_prefix='bdi_db_')
 
 class Settings(BaseSettings):
 
