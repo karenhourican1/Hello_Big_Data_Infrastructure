@@ -1,10 +1,30 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends, HTTPException
 
 from bdi_api.settings import DBCredentials, Settings
+
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import text, create_engine
 
 settings = Settings()
 db_credentials = DBCredentials()
 BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
+
+# Construct the database URL from credentials
+DATABASE_URL = f"postgresql://{db_credentials.username}:{db_credentials.password}@{db_credentials.host}:{db_credentials.port}/{db_credentials.dbname}"
+
+# Create the SQLAlchemy engine and sessionmaker
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+# Dependency to get a database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 s7 = APIRouter(
     responses={
@@ -14,6 +34,7 @@ s7 = APIRouter(
     prefix="/api/s7",
     tags=["s7"],
 )
+
 
 @s7.post("/aircraft/prepare")
 def prepare_data() -> str:
