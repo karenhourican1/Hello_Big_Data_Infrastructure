@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -8,9 +8,9 @@ class Aircraft(Base):
     __tablename__ = 'aircraft'
 
     aircraft_id = Column(Integer, primary_key=True)
-    icao = Column(String, unique=True, nullable=False)
-    registration = Column(String)
-    type = Column(String)
+    icao = Column(String(50), unique=True, nullable=False)
+    registration = Column(String(50))
+    type = Column(String(50))
 
 
 class Position(Base):
@@ -18,7 +18,7 @@ class Position(Base):
 
     position_id = Column(Integer, primary_key=True)
     aircraft_id = Column(Integer, ForeignKey('aircraft.aircraft_id'), nullable=False)
-    timestamp = Column(Float, nullable=False)  # Assuming UNIX timestamp here
+    timestamp = Column(Numeric)
     latitude = Column(Float)
     longitude = Column(Float)
 
