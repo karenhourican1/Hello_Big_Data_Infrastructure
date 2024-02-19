@@ -1,3 +1,5 @@
+import logging
+
 import boto3
 import gzip
 import json
@@ -11,6 +13,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import text, create_engine
 
 from bdi_api.models import Aircraft, Position, Statistic
+
+logger = logging.getLogger("uvicorn.error")
 
 settings = Settings()
 db_credentials = DBCredentials()
@@ -57,15 +61,33 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
     s3_client = boto3.client('s3')
 
     try:
+        # Log the start of the function
+        logger.info("Starting data preparation")
+
         # Get the list of files from S3
         s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        if not s3_objects.get('Contents'):
+            logger.warning(f"No files found in S3 bucket '{bucket_name}' with prefix '{prefix}'")
+            return "No files found in S3 bucket."
+
         for obj in s3_objects.get('Contents', []):
             file_key = obj['Key']
+            logger.info(f"Processing file: {file_key}")
             s3_object = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+
+            # Check if the file is empty
+            if s3_object['ContentLength'] == 0:
+                logger.warning(f"Found an empty file: {file_key}")
+                continue
+
+            # Log the type of the object's body
+            logger.info(f"Type of s3_object['Body']: {type(s3_object['Body'])}")
 
             # Read the contents of the object and decompress it
             with gzip.GzipFile(fileobj=s3_object['Body']) as gzipfile:
                 json_data = json.load(gzipfile)
+                # Log the success of reading the file
+                logger.info(f"Successfully read and decompressed the file: {file_key}")
 
                 # Process each record and create database entries
                 for record in json_data['aircraft']:
@@ -100,10 +122,13 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
 
     except SQLAlchemyError as e:
         db.rollback()
+        logger.error(f"Database error: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except boto3.exceptions.Boto3Error as e:
+        logger.error(f"Database error: {e}")
         raise HTTPException(status_code=500, detail=f"S3 error: {str(e)}")
     except Exception as e:
+        logger.error(f"Database error: {e}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
     return "OK"
