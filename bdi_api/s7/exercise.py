@@ -1,9 +1,16 @@
+import boto3
+import gzip
+import json
+
 from fastapi import APIRouter, status, Depends, HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 
 from bdi_api.settings import DBCredentials, Settings
 
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import text, create_engine
+
+from bdi_api.models import Aircraft, Position, Statistic
 
 settings = Settings()
 db_credentials = DBCredentials()
@@ -15,6 +22,10 @@ DATABASE_URL = f"postgresql://{db_credentials.username}:{db_credentials.password
 # Create the SQLAlchemy engine and sessionmaker
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Define S3 bucket and key prefix
+bucket_name = settings.s3_bucket
+prefix = 'raw/day=20231101/'
 
 
 # Dependency to get a database session
@@ -37,13 +48,63 @@ s7 = APIRouter(
 
 
 @s7.post("/aircraft/prepare")
-def prepare_data() -> str:
+def prepare_data(db: Session = Depends(get_db)) -> str:
     """Get the raw data from s3 and insert it into RDS
 
     Use credentials passed from `db_credentials`
     """
     user = db_credentials.username
-    # TODO
+    s3_client = boto3.client('s3')
+
+    try:
+        # Get the list of files from S3
+        s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        for obj in s3_objects.get('Contents', []):
+            file_key = obj['Key']
+            s3_object = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+
+            # Read the contents of the object and decompress it
+            with gzip.GzipFile(fileobj=s3_object['Body']) as gzipfile:
+                json_data = json.load(gzipfile)
+
+                # Process each record and create database entries
+                for record in json_data['aircraft']:
+                    aircraft = db.query(Aircraft).filter_by(icao=record['hex']).first()
+                    if not aircraft:
+                        aircraft = Aircraft(
+                            icao=record['hex'],
+                            registration=record.get('r'),
+                            type=record.get('t')
+                        )
+                        db.add(aircraft)
+
+                    new_position = Position(
+                        aircraft_id=aircraft.id,
+                        timestamp=json_data['now'],
+                        latitude=record.get('lat'),
+                        longitude=record.get('lon')
+                    )
+                    db.add(new_position)
+
+                    new_statistic = Statistic(
+                        aircraft_id=aircraft.id,
+                        timestamp=json_data['now'],
+                        max_altitude_baro=record.get('alt_baro'),
+                        max_ground_speed=record.get('gs'),
+                        had_emergency=bool(record.get('alert'))
+                    )
+                    db.add(new_statistic)
+
+                # Commit the session to save all the new records to the database
+                db.commit()
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except boto3.exceptions.Boto3Error as e:
+        raise HTTPException(status_code=500, detail=f"S3 error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
     return "OK"
 
