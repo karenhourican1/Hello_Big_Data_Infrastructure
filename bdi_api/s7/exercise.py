@@ -10,7 +10,6 @@ from bdi_api.settings import DBCredentials, Settings
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import text, create_engine
 from bdi_api.models import Aircraft, Position, Statistic
-from sqlalchemy import func
 from typing import List, Dict, Any
 
 logger = logging.getLogger("uvicorn.error")
