@@ -61,7 +61,7 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
     s3_client = boto3.client('s3')
 
     try:
-        # Log the start of the function
+        # # Log the start of the function
         logger.info("Starting data preparation")
 
         # Get the list of files from S3
@@ -74,6 +74,7 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
             file_key = obj['Key']
             logger.info(f"Processing file: {file_key}")
             s3_object = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+            file_content = s3_object['Body'].read()
 
             # Check if the file is empty
             if s3_object['ContentLength'] == 0:
@@ -83,9 +84,13 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
             # Log the type of the object's body
             logger.info(f"Type of s3_object['Body']: {type(s3_object['Body'])}")
 
-            # Read the contents of the object and decompress it
-            with gzip.GzipFile(fileobj=s3_object['Body']) as gzipfile:
-                json_data = json.load(gzipfile)
+            try:
+                # Try to read as a gzipped file
+                with gzip.GzipFile(fileobj=file_content) as gzipfile:
+                    json_data = json.load(gzipfile)
+            except gzip.BadGzipFile:
+                # If not gzipped, treat as plain JSON
+                json_data = json.loads(file_content)
                 # Log the success of reading the file
                 logger.info(f"Successfully read and decompressed the file: {file_key}")
 
