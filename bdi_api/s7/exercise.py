@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import text, create_engine
 from bdi_api.models import Aircraft, Position, Statistic
 from sqlalchemy import func
-from typing import List, Dict
+from typing import List, Dict, Any
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -177,8 +177,8 @@ def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0, db:
     return positions
 
 
-@s7.get("/aircraft/{icao}/stats")
-def get_aircraft_statistics(icao: str) -> dict:
+@s7.get("/aircraft/{icao}/stats", response_model=Dict[str, float])
+def get_aircraft_statistics(icao: str, db: Session = Depends(get_db)) -> dict[str, str] | dict[str, Any]:
     """Returns different statistics about the aircraft
 
     * max_altitude_baro
@@ -189,5 +189,20 @@ def get_aircraft_statistics(icao: str) -> dict:
 
     Use credentials passed from `db_credentials`
     """
-    # TODO
-    return {"max_altitude_baro": 300000, "max_ground_speed": 493, "had_emergency": False}
+    # Find the aircraft by icao code to ensure it exists
+    aircraft = db.query(Aircraft).filter(Aircraft.icao == icao).first()
+    if not aircraft:
+        raise HTTPException(status_code=404, detail="Aircraft not found")
+
+    # Query the statistics for the aircraft
+    stats = db.query(Statistic).filter(Statistic.aircraft_id == aircraft.aircraft_id).all()
+
+    if not stats:
+        return {"message": "No stats found for this aircraft"}
+
+    stat = stats
+    return {
+        "max_altitude_baro": stat.max_altitude_baro,
+        "max_ground_speed": stat.max_ground_speed,
+        "had_emergency": stat.had_emergency
+    }
