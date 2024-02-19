@@ -1,8 +1,8 @@
 import logging
-
 import boto3
 import gzip
 import json
+import io
 
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
@@ -61,69 +61,49 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
     s3_client = boto3.client('s3')
 
     try:
-        # # Log the start of the function
-        logger.info("Starting data preparation")
-
-        # Get the list of files from S3
         s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-        if not s3_objects.get('Contents'):
-            logger.warning(f"No files found in S3 bucket '{bucket_name}' with prefix '{prefix}'")
-            return "No files found in S3 bucket."
-
         for obj in s3_objects.get('Contents', []):
             file_key = obj['Key']
-            logger.info(f"Processing file: {file_key}")
             s3_object = s3_client.get_object(Bucket=bucket_name, Key=file_key)
             file_content = s3_object['Body'].read()
 
-            # Check if the file is empty
-            if s3_object['ContentLength'] == 0:
-                logger.warning(f"Found an empty file: {file_key}")
-                continue
-
-            # Log the type of the object's body
-            logger.info(f"Type of s3_object['Body']: {type(s3_object['Body'])}")
-
             try:
-                # Try to read as a gzipped file
-                with gzip.GzipFile(fileobj=file_content) as gzipfile:
+                # Use io.BytesIO to create a file-like object from the bytes
+                with gzip.GzipFile(fileobj=io.BytesIO(file_content)) as gzipfile:
                     json_data = json.load(gzipfile)
             except gzip.BadGzipFile:
-                # If not gzipped, treat as plain JSON
-                json_data = json.loads(file_content)
-                # Log the success of reading the file
-                logger.info(f"Successfully read and decompressed the file: {file_key}")
+                # If it's not gzipped, treat as plain JSON
+                json_data = json.loads(file_content.decode('utf-8'))  # Decode bytes to string before loading as JSON
 
                 # Process each record and create database entries
-                for record in json_data['aircraft']:
-                    aircraft = db.query(Aircraft).filter_by(icao=record['hex']).first()
-                    if not aircraft:
-                        aircraft = Aircraft(
-                            icao=record['hex'],
-                            registration=record.get('r'),
-                            type=record.get('t')
-                        )
-                        db.add(aircraft)
-
-                    new_position = Position(
-                        aircraft_id=aircraft.id,
-                        timestamp=json_data['now'],
-                        latitude=record.get('lat'),
-                        longitude=record.get('lon')
+            for record in json_data['aircraft']:
+                aircraft = db.query(Aircraft).filter_by(icao=record['hex']).first()
+                if not aircraft:
+                    aircraft = Aircraft(
+                        icao=record['hex'],
+                        registration=record.get('r'),
+                        type=record.get('t')
                     )
-                    db.add(new_position)
+                    db.add(aircraft)
 
-                    new_statistic = Statistic(
-                        aircraft_id=aircraft.id,
-                        timestamp=json_data['now'],
-                        max_altitude_baro=record.get('alt_baro'),
-                        max_ground_speed=record.get('gs'),
-                        had_emergency=bool(record.get('alert'))
-                    )
-                    db.add(new_statistic)
+                new_position = Position(
+                    aircraft_id=aircraft.aircraft_id,
+                    timestamp=json_data['now'],
+                    latitude=record.get('lat'),
+                    longitude=record.get('lon')
+                )
+                db.add(new_position)
+
+                new_statistic = Statistic(
+                    aircraft_id=aircraft.aircraft_id,
+                    max_altitude_baro=record.get('alt_baro'),
+                    max_ground_speed=record.get('gs'),
+                    had_emergency=bool(record.get('alert'))
+                )
+                db.add(new_statistic)
 
                 # Commit the session to save all the new records to the database
-                db.commit()
+            db.commit()
 
     except SQLAlchemyError as e:
         db.rollback()
