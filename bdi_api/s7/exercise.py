@@ -76,6 +76,18 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
 
             # Process each record and create database entries
             for record in json_data['aircraft']:
+                # Validation and conversion for max_altitude_baro
+                try:
+                    max_altitude_baro = int(record.get('alt_baro', 0))
+                except (ValueError, TypeError):
+                    max_altitude_baro = None
+                # Validation and conversion for max_ground_speed
+                try:
+                    max_ground_speed = float(record.get('gs', 0.0))
+                except (ValueError, TypeError):
+                    max_ground_speed = None  # Assign a default value or None
+
+                # Check if aircraft exists and create if not
                 aircraft = db.query(Aircraft).filter_by(icao=record['hex']).first()
                 if not aircraft:
                     aircraft = Aircraft(
@@ -84,23 +96,26 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
                         type=record.get('t')
                     )
                     db.add(aircraft)
+                    db.flush()  # Flush to assign an ID to the new aircraft object
 
+                # Create new position entry
                 new_position = Position(
                     aircraft_id=aircraft.aircraft_id,
                     timestamp=json_data['now'],
-                    # timestamp=13456.789,
                     latitude=record.get('lat'),
                     longitude=record.get('lon')
                 )
                 db.add(new_position)
 
-                new_statistic = Statistic(
-                    aircraft_id=aircraft.aircraft_id,
-                    max_altitude_baro=record.get('alt_baro'),
-                    max_ground_speed=record.get('gs'),
-                    had_emergency=bool(record.get('alert'))
-                )
-                db.add(new_statistic)
+                # Create new statistic entry only if max_altitude_baro is valid
+                if max_altitude_baro is not None:
+                    new_statistic = Statistic(
+                        aircraft_id=aircraft.aircraft_id,
+                        max_altitude_baro=max_altitude_baro,
+                        max_ground_speed=max_ground_speed,
+                        had_emergency=bool(record.get('alert'))
+                    )
+                    db.add(new_statistic)
 
                 # Commit the session to save all the new records to the database
             db.commit()
@@ -119,37 +134,47 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
     return "OK"
 
 
-@s7.get("/aircraft/", response_model=List[Dict[str, str]])
-def list_aircraft(num_results: int = 100, page: int = 0, db: Session = Depends(get_db)) -> List[Dict[str, str]]:
+@s7.get("/aircraft/", response_model=List)
+def list_aircraft(db: Session = Depends(get_db)) -> List[Dict[str, str]]:
     """List all the available aircraft, its registration and type ordered by
     icao asc FROM THE DATABASE
 
     Use credentials passed from `db_credentials`
     """
-    offset = page * num_results
-    aircraft_query = db.query(Aircraft).order_by(Aircraft.icao.asc()).offset(offset).limit(num_results).all()
-
-    aircraft_list = [{
-        "icao": aircraft.icao,
-        "registration": aircraft.registration,
-        "type": aircraft.type
-    } for aircraft in aircraft_query]
-
-    if not aircraft_list:
+    aircraft_query = db.query(Aircraft).order_by(Aircraft.icao.asc()).all()
+    if not aircraft_query:
         raise HTTPException(status_code=404, detail="No aircraft found")
+    # Transform SQLAlchemy model instances into dictionaries for response
+    return [{"icao": aircraft.icao, "registration": aircraft.registration, "type": aircraft.type} for aircraft in aircraft_query]
 
-    return aircraft_list
 
-
-@s7.get("/aircraft/{icao}/positions")
-def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0) -> list[dict]:
+@s7.get("/aircraft/{icao}/positions", response_model=List[Dict[str, float]])
+def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0, db: Session = Depends(get_db)) -> List[Dict[str, float]]:
     """Returns all the known positions of an aircraft ordered by time (asc)
     If an aircraft is not found, return an empty list. FROM THE DATABASE
 
     Use credentials passed from `db_credentials`
     """
-    # TODO
-    return [{"timestamp": 1609275898.6, "lat": 30.404617, "lon": -86.476566}]
+    # Query the database for the aircraft with the given icao code
+    aircraft = db.query(Aircraft).filter(Aircraft.icao == icao).first()
+    if not aircraft:
+        raise HTTPException(status_code=404, detail="Aircraft not found")
+
+    # Query the positions for the given aircraft, ordered by timestamp
+    position_query = (db.query(Position)
+                      .filter(Position.aircraft_id == aircraft.aircraft_id)
+                      .order_by(Position.timestamp.asc())
+                      .offset(page * num_results)
+                      .limit(num_results)
+                      .all())
+
+    # If no positions found, return an empty list
+    if not position_query:
+        return []
+
+    # Transform SQLAlchemy position objects into dictionaries
+    positions = [{"timestamp": pos.timestamp, "lat": pos.latitude, "lon": pos.longitude} for pos in position_query]
+    return positions
 
 
 @s7.get("/aircraft/{icao}/stats")
