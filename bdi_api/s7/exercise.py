@@ -6,13 +6,12 @@ import io
 
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
-
 from bdi_api.settings import DBCredentials, Settings
-
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import text, create_engine
-
 from bdi_api.models import Aircraft, Position, Statistic
+from sqlalchemy import func
+from typing import List, Dict
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -75,7 +74,7 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
                 # If it's not gzipped, treat as plain JSON
                 json_data = json.loads(file_content.decode('utf-8'))  # Decode bytes to string before loading as JSON
 
-                # Process each record and create database entries
+            # Process each record and create database entries
             for record in json_data['aircraft']:
                 aircraft = db.query(Aircraft).filter_by(icao=record['hex']).first()
                 if not aircraft:
@@ -89,6 +88,7 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
                 new_position = Position(
                     aircraft_id=aircraft.aircraft_id,
                     timestamp=json_data['now'],
+                    # timestamp=13456.789,
                     latitude=record.get('lat'),
                     longitude=record.get('lon')
                 )
@@ -119,15 +119,26 @@ def prepare_data(db: Session = Depends(get_db)) -> str:
     return "OK"
 
 
-@s7.get("/aircraft/")
-def list_aircraft(num_results: int = 100, page: int = 0) -> list[dict]:
+@s7.get("/aircraft/", response_model=List[Dict[str, str]])
+def list_aircraft(num_results: int = 100, page: int = 0, db: Session = Depends(get_db)) -> List[Dict[str, str]]:
     """List all the available aircraft, its registration and type ordered by
     icao asc FROM THE DATABASE
 
     Use credentials passed from `db_credentials`
     """
-    # TODO
-    return [{"icao": "0d8300", "registration": "YV3382", "type": "LJ31"}]
+    offset = page * num_results
+    aircraft_query = db.query(Aircraft).order_by(Aircraft.icao.asc()).offset(offset).limit(num_results).all()
+
+    aircraft_list = [{
+        "icao": aircraft.icao,
+        "registration": aircraft.registration,
+        "type": aircraft.type
+    } for aircraft in aircraft_query]
+
+    if not aircraft_list:
+        raise HTTPException(status_code=404, detail="No aircraft found")
+
+    return aircraft_list
 
 
 @s7.get("/aircraft/{icao}/positions")
