@@ -12,7 +12,9 @@ import bdi_api
 from bdi_api.examples import v0_router
 from bdi_api.s1.exercise import s1
 from bdi_api.s4.exercise import s4
+from bdi_api.s7.exercise import s7
 from bdi_api.settigns import Settings
+from bdi_api.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +29,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
     logger.warning("Application shutdown")
 
 
-app = FastAPI()
-app.include_router(v0_router)
-app.include_router(s1)
 app = FastAPI(
     title=bdi_api.__name__,
     version=bdi_api.__version__,
@@ -46,6 +45,8 @@ FastAPIInstrumentor.instrument_app(app)
 app.include_router(v0_router)
 app.include_router(s1)
 app.include_router(s4)
+app.include_router(s7)
+
 
 @app.get("/health", status_code=200)
 async def get_health() -> JSONResponse:
@@ -58,11 +59,6 @@ async def get_health() -> JSONResponse:
 @app.get("/version", status_code=200)
 async def get_version() -> dict:
     return {"version": bdi_api.__version__}
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="localhost", port=8000, access_log=False)
 
 
 def main() -> None:
