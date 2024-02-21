@@ -47,7 +47,7 @@ def download_data() -> str:
         soup = BeautifulSoup(response.text, 'html.parser')
         file_list = [a['href'] for a in soup.find_all('a') if a['href'].endswith('Z.json.gz')]
 
-        for file_name in file_list[:10]:  # Limit to the first 1000 files
+        for file_name in file_list[:1000]:  # Limit to the first 1000 files
             file_url = f"{BASE_URL}{file_name}"
             response = requests.get(file_url)
             response.raise_for_status()
