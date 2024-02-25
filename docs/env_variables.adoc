@@ -35,6 +35,8 @@ Replace `VARIABLE_NAME` with the name of your variable and `"variable_value"` wi
    - Close and reopen Command Prompt to ensure the changes take effect.
    - To verify, type `echo %VARIABLE_NAME%`. It should display the value you set.
 
+https://www.shellhacks.com/windows-set-environment-variable-cmd-powershell/[Extra info]
+
 === macOS
 
 1. Open Terminal:

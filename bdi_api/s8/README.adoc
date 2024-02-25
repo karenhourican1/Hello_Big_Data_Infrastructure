@@ -7,7 +7,8 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
-This is the final project and worth the same as the other ones.
+This is the final project and comprises much of what we have been seeing those last sessions.
+This is the reason why it's worth the same as the other ones.
 
 > Goals
 >
@@ -131,7 +132,8 @@ WARNING: If after the merge you have issues running your app, it's probably beca
 
 1. Commit and push your code to github.
 2. Go to your GitHub's commit history, take a screenshot and upload it to campus
-3. Screenshot of the airflow website running in your PC showing the dag you developed
+3. Screenshot of successful executions for each one of your dags.
+4. Architecture diagram
 
 I'll use the latest commit shown in the snapshot to evaluate your code.
 
