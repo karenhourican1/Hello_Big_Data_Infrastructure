@@ -36,7 +36,7 @@ For the parts requiring code, I'll consider the following:
  * Coverage % and completeness
  * Failing tests result in a 0 for this section
 
-WARNING: Late delivery not justified: -2 points per day
+WARNING: Late delivery not justified: -1 points per day
 
 
 == Libraries
@@ -50,7 +50,14 @@ type safe and documented APIs easily.
 == Data
 Use the `data/` folder to store your data.
 It will not be uploaded to any git repository.
-<<<<<<< HEAD
-Testing 
-=======
->>>>>>> marti/main
+
+
+== Resources
+
+* link:docs/api.adoc[What is an API]
+* link:docs/pyenv.adoc[Pyenv: multiple python environments and versions]
+* link:docs/poetry.adoc[Poetry for python dependency management]
+* link:docs/env_variables.adoc[Environment variables]
+* link:docs/pydantic.adoc[Pydantic for settings]
+* link:https://realpython.com/python-testing/[Getting Started with Testing in Python]
+*

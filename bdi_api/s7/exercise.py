@@ -144,11 +144,13 @@ def list_aircraft(db: Session = Depends(get_db)) -> List[Dict[str, str]]:
     if not aircraft_query:
         raise HTTPException(status_code=404, detail="No aircraft found")
     # Transform SQLAlchemy model instances into dictionaries for response
-    return [{"icao": aircraft.icao, "registration": aircraft.registration, "type": aircraft.type} for aircraft in aircraft_query]
+    return [{"icao": aircraft.icao, "registration": aircraft.registration, "type": aircraft.type} for aircraft in
+            aircraft_query]
 
 
 @s7.get("/aircraft/{icao}/positions", response_model=List[Dict[str, float]])
-def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0, db: Session = Depends(get_db)) -> List[Dict[str, float]]:
+def get_aircraft_position(icao: str, num_results: int = 1000, page: int = 0, db: Session = Depends(get_db)) -> List[
+    Dict[str, float]]:
     """Returns all the known positions of an aircraft ordered by time (asc)
     If an aircraft is not found, return an empty list. FROM THE DATABASE
 
@@ -199,7 +201,12 @@ def get_aircraft_statistics(icao: str, db: Session = Depends(get_db)) -> dict[st
     if not stats:
         return {"message": "No stats found for this aircraft"}
 
-    stat = stats
+    # Query the latest statistic for the aircraft
+    stat = (db.query(Statistic)
+            .filter(Statistic.aircraft_id == aircraft.aircraft_id)
+            .order_by(Statistic.statistics_id.desc())  # Assuming you want the latest statistic
+            .first())
+
     return {
         "max_altitude_baro": stat.max_altitude_baro,
         "max_ground_speed": stat.max_ground_speed,
