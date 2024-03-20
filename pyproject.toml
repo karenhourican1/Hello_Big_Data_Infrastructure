@@ -13,7 +13,7 @@ packages = [{include = "bdi_api"}]
 start = "bdi_api.app:main"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = ">=3.8,<4.0"
 fastapi = "^0.104.1"
 uvicorn = "^0.24.0"  # Updated to latest version from new project
 pydantic = "^2.4"
