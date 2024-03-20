@@ -23,9 +23,9 @@ dag = DAG(
     max_active_runs=1
 )
 
-S3_CONN_ID = 'my_s3_conn_id'  # Replace with your Airflow S3 connection id
+S3_CONN_ID = 'aws_default'
 S3_BUCKET = 'bdi-aircraft-kh'
-FUEL_CONSUMPTION_URL = "https://example.com/fuel_consumption_rates.json"  # Replace with the actual URL
+FUEL_CONSUMPTION_URL = "https://raw.githubusercontent.com/martsec/flight_co2_analysis/main/data/aircraft_type_fuel_consumption_rates.json"
 
 
 def download_and_upload_fuel_rates(**kwargs):

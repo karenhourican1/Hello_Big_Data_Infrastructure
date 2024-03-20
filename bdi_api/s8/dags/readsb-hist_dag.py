@@ -25,9 +25,8 @@ dag = DAG(
     max_active_runs=1
 )
 
-# Replace 'my_s3_conn_id' with your Airflow S3 connection id
-S3_CONN_ID = 'my_s3_conn_id'
-S3_BUCKET = 'your_s3_bucket_name'
+S3_CONN_ID = 'aws_default'
+S3_BUCKET = 'bdi-aircraft-kh'
 BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
 
 
