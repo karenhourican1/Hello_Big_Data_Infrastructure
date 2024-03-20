@@ -1,14 +1,27 @@
-from typing import Optional
+from typing import Optional, List
 
-from fastapi import APIRouter, status
-from pydantic import BaseModel
+from fastapi import APIRouter, status, Depends, HTTPException
 
 from bdi_api.settings import DBCredentials, Settings
 
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from bdi_api.models import Aircraft
+from bdi_api.settings import DBCredentials
+from pydantic import BaseModel
 
 settings = Settings()
 db_credentials = DBCredentials()
 BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
+
+# Construct the database URL from credentials
+DATABASE_URL = f"postgresql://{db_credentials.username}:{db_credentials.password}@{db_credentials.host}:{db_credentials.port}/{db_credentials.dbname}"
+
+# Create the SQLAlchemy engine and sessionmaker
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 s8 = APIRouter(
     responses={
@@ -18,6 +31,15 @@ s8 = APIRouter(
     prefix="/api/s8",
     tags=["s8"],
 )
+
+
+# Dependency to get a database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 class AircraftReturn(BaseModel):
@@ -30,33 +52,36 @@ class AircraftReturn(BaseModel):
     model: Optional[str]
 
 
-@s8.get("/aircraft/")
-def list_aircraft(num_results: int = 100, page: int = 0) -> list[AircraftReturn]:
+@s8.get("/aircraft/", response_model=List[AircraftReturn])
+def list_aircraft(db: Session = Depends(get_db), num_results: int = 100, page: int = 0) -> List[AircraftReturn]:
     """List all the available aircraft, its registration and type ordered by
-    icao asc FROM THE DATABASE
+        icao asc FROM THE DATABASE
 
-    ADDITIONS:
-    * Instead of passing a JSON, use pydantic to return the correct schema
-       See: https://fastapi.tiangolo.com/tutorial/response-model/
-    * Enrich it with information from the aircrafts database (see README for link)
-      * `owner`  (`ownop` field in the aircrafts DB)
-      * `manufacturer` and `model`
+        ADDITIONS:
+        * Instead of passing a JSON, use pydantic to return the correct schema
+           See: https://fastapi.tiangolo.com/tutorial/response-model/
+        * Enrich it with information from the aircrafts database (see README for link)
+          * `owner`  (`ownop` field in the aircrafts DB)
+          * `manufacturer` and `model`
 
 
-    IMPORTANT: Only return the aircraft that we have seen and not the entire list in the aircrafts database
+        IMPORTANT: Only return the aircraft that we have seen and not the entire list in the aircrafts database
 
-    """
-    # TODO
-    return [
-        AircraftReturn.parse_obj({
-            "icao":"a835af",
-            "registration":"N628TS",
-            "type":"GLF6",
-            "manufacturer":"GULFSTREAM AEROSPACE CORP",
-            "model":"GVI (G650ER)",
-            "owner":"Elon Musk"
-        }),
-    ]
+"""
+
+    query = (db.query(Aircraft)
+             .order_by(Aircraft.icao)
+             .limit(num_results)
+             .offset(page * num_results))
+    results = query.all()
+    if not results:
+        raise HTTPException(status_code=404, detail="Aircraft not found")
+
+    return [AircraftReturn(
+                icao=aircraft.icao,
+                registration=aircraft.registration,
+                type=aircraft.type
+            ) for aircraft in results]
 
 
 class AircraftCO2(BaseModel):
@@ -65,6 +90,7 @@ class AircraftCO2(BaseModel):
     hours_flown: float
     """Co2 tons generated"""
     co2: Optional[float]
+
 
 @s8.get("/aircraft/{icao}/co2")
 def get_aircraft_co2(icao: str, day: str) -> AircraftCO2:
