@@ -24,7 +24,7 @@ dag = DAG(
 
 S3_CONN_ID = 'aws_default'
 S3_BUCKET = 'bdi-aircraft-kh'
-AIRCRAFT_DATABASE_URL = "URL_TO_THE_AIRCRAFT_DATABASE"
+AIRCRAFT_DATABASE_URL = "https://bdi-aircraft-kh.s3.amazonaws.com/basic-ac-db.json"
 
 
 def download_aircraft_database(**kwargs):
