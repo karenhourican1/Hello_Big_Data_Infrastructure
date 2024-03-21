@@ -1,9 +1,9 @@
 import json
 import requests
+import boto3
 from bs4 import BeautifulSoup
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.hooks.S3_hook import S3Hook
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -25,14 +25,14 @@ dag = DAG(
     max_active_runs=1
 )
 
-S3_CONN_ID = 'aws_default'
+# S3_CONN_ID = 'aws_default'
 S3_BUCKET = 'bdi-aircraft-kh'
 BASE_URL = "https://samples.adsbexchange.com/readsb-hist/2023/11/01/"
 
 
 def download_task(execution_date, **kwargs):
-    """Download files from a URL and upload them to AWS S3"""
-    s3_hook = S3Hook(aws_conn_id=S3_CONN_ID)
+    """Download files from a URL and upload them to AWS S3 using boto3"""
+    s3_client = boto3.client('s3')
     s3_prefix_path = f"raw/day={execution_date.strftime('%Y%m%d')}/"
 
     response = requests.get(BASE_URL)
@@ -45,25 +45,20 @@ def download_task(execution_date, **kwargs):
         response = requests.get(file_url)
         response.raise_for_status()
 
-        s3_hook.load_bytes(
-            bytes_data=response.content,
-            bucket_name=S3_BUCKET,
-            key=f"{s3_prefix_path}{file_name}",
-            replace=True
-        )
+        s3_client.put_object(Bucket=S3_BUCKET, Key=f"{s3_prefix_path}{file_name}", Body=response.content)
 
 
 def prepare_task(execution_date, **kwargs):
-    """Download data from AWS S3, process it, and re-upload it to S3"""
-    s3_hook = S3Hook(aws_conn_id=S3_CONN_ID)
+    """Download data from AWS S3 using boto3, process it, and re-upload it to S3"""
+    s3_client = boto3.client('s3')
     s3_prefix_path = f"raw/day={execution_date.strftime('%Y%m%d')}/"
     prepared_prefix = f"prepared/day={execution_date.strftime('%Y%m%d')}/"
 
-    objects = s3_hook.list_keys(bucket_name=S3_BUCKET, prefix=s3_prefix_path)
+    response = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_prefix_path)
+    objects = [obj['Key'] for obj in response.get('Contents', [])]
 
     for obj_key in objects:
-        # Download file from S3
-        file_content = s3_hook.read_key(obj_key, bucket_name=S3_BUCKET)
+        file_content = s3_client.get_object(Bucket=S3_BUCKET, Key=obj_key)['Body'].read()
         data = json.loads(file_content)
         aircraft_data = data.get("aircraft", [])
         timestamp = data.get("now", "")
@@ -77,12 +72,7 @@ def prepare_task(execution_date, **kwargs):
         } for aircraft in aircraft_data]
 
         processed_data_string = json.dumps(extracted_data, indent=4)
-        s3_hook.load_string(
-            string_data=processed_data_string,
-            bucket_name=S3_BUCKET,
-            key=f"{prepared_prefix}{Path(obj_key).stem}.processed.json",
-            replace=True
-        )
+        s3_client.put_object(Bucket=S3_BUCKET, Key=f"{prepared_prefix}{Path(obj_key).stem}.processed.json", Body=processed_data_string.encode())
 
 
 download_operator = PythonOperator(
@@ -100,4 +90,3 @@ prepare_operator = PythonOperator(
     op_kwargs={'execution_date': '{{ ds }}'},
     dag=dag,
 )
-
