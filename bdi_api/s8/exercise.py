@@ -1,8 +1,11 @@
+import json
 from typing import Optional, List
 from datetime import datetime, timedelta
 
+import boto3
 from fastapi import APIRouter, status, Depends, HTTPException
 
+from bdi_api.s8.dags.download_fuel_consumption_rates_dag import S3_BUCKET
 from bdi_api.settings import Settings
 
 from sqlalchemy.orm import Session
@@ -159,3 +162,19 @@ def get_aircraft_co2(icao: str, day: str, db: Session = Depends(get_db)) -> Airc
     co2_tons = (fuel_used_kg * 3.15) / 907.185
 
     return AircraftCO2(icao=icao, hours_flown=hours_flown, co2=co2_tons)
+
+
+def get_fuel_consumption_rate(icao_type: str) -> Optional[float]:
+    s3_client = boto3.client('s3')
+    try:
+        file_name = f"fuel_consumption_rates_{datetime.now().strftime('%Y-%m')}.json"
+        response = s3_client.get_object(Bucket=S3_BUCKET, Key=f"fuel_consumption/{file_name}")
+        fuel_consumption_data = json.loads(response['Body'].read())
+        rate_info = fuel_consumption_data.get(icao_type)
+        if rate_info:
+            return rate_info['galph']
+    except s3_client.exceptions.NoSuchKey:
+        print(f"The file {file_name} does not exist.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return None
