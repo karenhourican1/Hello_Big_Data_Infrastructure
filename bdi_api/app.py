@@ -72,3 +72,6 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
+
+def dependency_overrides():
+    return None
