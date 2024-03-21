@@ -1,8 +1,8 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from datetime import datetime, timedelta
 import requests
+import boto3
 
 # DAG Configuration
 default_args = {
@@ -22,7 +22,7 @@ dag = DAG(
     max_active_runs=1
 )
 
-S3_CONN_ID = 'aws_default'
+# S3_CONN_ID = 'aws_default'
 S3_BUCKET = 'bdi-aircraft-kh'
 AIRCRAFT_DATABASE_URL = "https://bdi-aircraft-kh.s3.amazonaws.com/basic-ac-db.json"
 
@@ -32,7 +32,7 @@ def download_aircraft_database(**kwargs):
     Download the aircraft database and upload it to AWS S3.
     Since this is a full refresh, we'll replace the existing file.
     """
-    s3_hook = S3Hook(aws_conn_id=S3_CONN_ID)
+    s3_client = boto3.client('s3')
 
     # Make the HTTP request to the aircraft database URL
     response = requests.get(AIRCRAFT_DATABASE_URL)
@@ -42,11 +42,10 @@ def download_aircraft_database(**kwargs):
     target_file_name = f"aircraft_database_{datetime.now().strftime('%Y-%m')}.json"
 
     # Upload the response content to S3, replacing the file if it already exists
-    s3_hook.load_string(
-        string_data=response.text,
-        bucket_name=S3_BUCKET,
-        key=f"aircraft_database/{target_file_name}",
-        replace=True
+    s3_client.put_object(
+        Bucket=S3_BUCKET,
+        Key=f"aircraft_database/{target_file_name}",
+        Body=response.text.encode('utf-8')
     )
 
 
