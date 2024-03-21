@@ -1,8 +1,8 @@
 import json
 import requests
+import boto3
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from datetime import datetime, timedelta
 
 # DAG Configuration
@@ -19,27 +19,27 @@ dag = DAG(
     'download_aircraft_fuel_consumption',
     default_args=default_args,
     description='A DAG to download aircraft type fuel consumption rates',
-    schedule_interval='@monthly',  # Adjust as necessary
+    schedule_interval='@monthly',
     max_active_runs=1
 )
 
-S3_CONN_ID = 'aws_default'
+# S3_CONN_ID = 'aws_default'
 S3_BUCKET = 'bdi-aircraft-kh'
 FUEL_CONSUMPTION_URL = "https://raw.githubusercontent.com/martsec/flight_co2_analysis/main/data/aircraft_type_fuel_consumption_rates.json"
 
 
 def download_and_upload_fuel_rates(**kwargs):
     """Download fuel consumption rates and upload them to AWS S3"""
-    s3_hook = S3Hook(aws_conn_id=S3_CONN_ID)
+    s3_client = boto3.client('s3')
     response = requests.get(FUEL_CONSUMPTION_URL)
     response.raise_for_status()
 
     target_file_name = f"fuel_consumption_rates_{datetime.now().strftime('%Y-%m')}.json"
-    s3_hook.load_string(
-        string_data=response.text,
-        bucket_name=S3_BUCKET,
-        key=f"fuel_consumption/{target_file_name}",
-        replace=True
+    s3_client.put_object(
+        Bucket=S3_BUCKET,
+        Key=f"fuel_consumption/{target_file_name}",
+        Body=response.text.encode(),
+        ContentType='application/json'
     )
 
 
